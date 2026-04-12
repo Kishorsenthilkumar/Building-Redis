@@ -149,26 +149,34 @@ async def handle_client(reader,writer):
             if stream_key not in database:
                 database[stream_key] = []
 
-            # 1. Parse New ID
-            try:
-                stream_id_parts = raw_id.split(b"-")
-                new_ms = int(stream_id_parts[0])
-                new_seq = int(stream_id_parts[1])
-            except (ValueError, IndexError):
-                new_ms, new_seq = 0, 0
+            # 1. Parse New ID (Keep sequence as bytes to check for *)
+            stream_id = raw_id.split(b"-")
+            new_ms = int(stream_id[0])
+            new_seq_raw = stream_id[1]
 
             # 2. Set default last_ values
             last_ms, last_seq = -1, -1
 
-            # 3. Get last ID from database if it exists
+            # 3. Get last ID from database
             if database[stream_key]:
                 last_entry = database[stream_key][-1]
-                try:
-                    last_id_parts = last_entry["id"].split(b"-")
-                    last_ms = int(last_id_parts[0])
-                    last_seq = int(last_id_parts[1])
-                except (ValueError, IndexError):
-                    pass
+                last_id_parts = last_entry["id"].split(b"-")
+                last_ms, last_seq = int(last_id_parts[0]), int(last_id_parts[1])
+
+            # --- YOUR NEW LOGIC STARTS HERE ---
+            if new_seq_raw == b"*":
+                if new_ms == 0:
+                    new_seq = 1
+                elif new_ms == last_ms:
+                    new_seq = last_seq + 1
+                else:
+                    new_seq = 0
+                
+                # We must update raw_id so the response says "0-1" instead of "0-*"
+                raw_id = f"{new_ms}-{new_seq}".encode()
+            else:
+                new_seq = int(new_seq_raw)
+            # --- YOUR NEW LOGIC ENDS HERE ---
 
             # 4. Rule: 0-0 Check
             if new_ms == 0 and new_seq == 0:
@@ -182,15 +190,17 @@ async def handle_client(reader,writer):
                 await writer.drain()
                 continue
 
-            # 6. Parse Entry Data (Stepping by 4 because of $length headers)
+            # 6. Parse Entry Data
             entry_data = {}
             for i in range(8, len(parts) - 1, 4):
                 if i + 2 < len(parts):
                     entry_data[parts[i]] = parts[i+2]
             
-            database[stream_key].append({"id": raw_id, "values": entry_data})
+            # Save the UPDATED raw_id
+            entry = {"id": raw_id, "values": entry_data}
+            database[stream_key].append(entry)
 
-            # 7. Respond with the ID as a Bulk String
+            # 7. Respond with the generated ID (e.g., 0-1)
             response = b"$" + str(len(raw_id)).encode() + b"\r\n" + raw_id + b"\r\n"
             writer.write(response)
             await writer.drain()
