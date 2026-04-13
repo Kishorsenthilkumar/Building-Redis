@@ -149,6 +149,9 @@ async def handle_client(reader,writer):
             if stream_key not in database:
                 database[stream_key] = []
 
+            if raw_id == b"*":
+                new_ms=int(time.time()*1000)
+
             # 1. Parse New ID (Keep sequence as bytes to check for *)
             stream_id = raw_id.split(b"-")
             new_ms = int(stream_id[0])
