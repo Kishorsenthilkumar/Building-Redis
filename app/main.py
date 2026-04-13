@@ -149,37 +149,38 @@ async def handle_client(reader,writer):
             if stream_key not in database:
                 database[stream_key] = []
 
-            if raw_id == b"*":
-                new_ms=int(time.time()*1000)
-
-            # 1. Parse New ID (Keep sequence as bytes to check for *)
-            stream_id = raw_id.split(b"-")
-            new_ms = int(stream_id[0])
-            new_seq_raw = stream_id[1]
-
-            # 2. Set default last_ values
+            # 1. Get last ID from database FIRST (needed for all generation types)
             last_ms, last_seq = -1, -1
-
-            # 3. Get last ID from database
             if database[stream_key]:
                 last_entry = database[stream_key][-1]
                 last_id_parts = last_entry["id"].split(b"-")
                 last_ms, last_seq = int(last_id_parts[0]), int(last_id_parts[1])
 
-            # --- YOUR NEW LOGIC STARTS HERE ---
-            if new_seq_raw == b"*":
-                if new_ms == 0:
-                    new_seq = 1
-                elif new_ms == last_ms:
+            # 2. Handle FULL Auto-generation (*)
+            if raw_id == b"*":
+                new_ms = int(time.time() * 1000)
+                if new_ms == last_ms:
                     new_seq = last_seq + 1
                 else:
                     new_seq = 0
-                
-                # We must update raw_id so the response says "0-1" instead of "0-*"
                 raw_id = f"{new_ms}-{new_seq}".encode()
+            
+            # 3. Handle Partial (1-*) or Explicit (1-1)
             else:
-                new_seq = int(new_seq_raw)
-            # --- YOUR NEW LOGIC ENDS HERE ---
+                stream_id = raw_id.split(b"-")
+                new_ms = int(stream_id[0])
+                new_seq_raw = stream_id[1]
+
+                if new_seq_raw == b"*":
+                    if new_ms == 0:
+                        new_seq = 1
+                    elif new_ms == last_ms:
+                        new_seq = last_seq + 1
+                    else:
+                        new_seq = 0
+                    raw_id = f"{new_ms}-{new_seq}".encode()
+                else:
+                    new_seq = int(new_seq_raw)
 
             # 4. Rule: 0-0 Check
             if new_ms == 0 and new_seq == 0:
@@ -199,15 +200,12 @@ async def handle_client(reader,writer):
                 if i + 2 < len(parts):
                     entry_data[parts[i]] = parts[i+2]
             
-            # Save the UPDATED raw_id
-            entry = {"id": raw_id, "values": entry_data}
-            database[stream_key].append(entry)
+            database[stream_key].append({"id": raw_id, "values": entry_data})
 
-            # 7. Respond with the generated ID (e.g., 0-1)
+            # 7. Success Response
             response = b"$" + str(len(raw_id)).encode() + b"\r\n" + raw_id + b"\r\n"
             writer.write(response)
             await writer.drain()
-
 
 
            
