@@ -207,65 +207,65 @@ async def handle_client(reader,writer):
             writer.write(response)
             await writer.drain()
 
-    if command==b"xrange":
+        if command==b"xrange":
 
-        stream_key=parts[4]
-        start_id=parts[6]
-        stop_id=parts[8]
+           stream_key=parts[4]
+           start_id=parts[6]
+           stop_id=parts[8]
 
-        if start_id==b"-":
-            start_ms=-1
-            start_seq=-1
-        else:
-            s_parts=start_id.split(b"-")
-            start_ms=int(s_parts[0])
+           if start_id==b"-":
+              start_ms=-1
+              start_seq=-1
+           else:
+                s_parts=start_id.split(b"-")
+                start_ms=int(s_parts[0])
 
-            if len(s_parts)>1:
-                start_seq=int(s_parts[1])
-            else:
-                start_seq=0
+                if len(s_parts)>1:
+                    start_seq=int(s_parts[1])
+                else:
+                    start_seq=0
 
-        if stop_id==b"+":
-            stop_ms=float('inf')
-            stop_seq=float('inf')
-        else:
-            e_parts=stop_id.split(b"-")
-            stop_ms=int(e_parts[0])
-
-            if len(e_parts)>1:
-                stop_seq=int(e_parts[1])
-            else:
+           if stop_id==b"+":
+                stop_ms=float('inf')
                 stop_seq=float('inf')
+           else:
+                e_parts=stop_id.split(b"-")
+                stop_ms=int(e_parts[0])
 
-        my_stream=database.get(stream_key,[])
-        filtered_entires=[]
+                if len(e_parts)>1:
+                   stop_seq=int(e_parts[1])
+                else:
+                   stop_seq=float('inf')
 
-        for entry in my_stream:
-            entry_id=entry["id"].split(b"-")
-            entry_ms=int(entry_id[0])
-            entry_seq=int(entry_id[1])
+           my_stream=database.get(stream_key,[])
+           filtered_entires=[]
 
-            if (start_ms, start_seq) <= (entry_ms, entry_seq) <= (stop_ms, stop_seq):
+           for entry in my_stream:
+              entry_id=entry["id"].split(b"-")
+              entry_ms=int(entry_id[0])
+              entry_seq=int(entry_id[1])
+
+              if (start_ms, start_seq) <= (entry_ms, entry_seq) <= (stop_ms, stop_seq):
                 filtered_entires.append(entry)
 
-        response=f"*{len(filtered_entires)}\r\n".encode()
+           response=f"*{len(filtered_entires)}\r\n".encode()
 
-        for entry in filtered_entires:
-            response+=b"*2\r\n"
-            response+=b"$"+str(len(entry["id"])).encode() + b"\r\n" + entry["id"] + b"\r\n"
+           for entry in filtered_entires:
+              response+=b"*2\r\n"
+              response+=b"$"+str(len(entry["id"])).encode() + b"\r\n" + entry["id"] + b"\r\n"
 
-            kv_list=[]
-            for k, v in entry["values"].items():
+              kv_list=[]
+              for k, v in entry["values"].items():
                 kv_list.append(k)
                 kv_list.append(v)
             
-            response += f"*{len(kv_list)}\r\n".encode()
+              response += f"*{len(kv_list)}\r\n".encode()
 
-            for item in kv_list:
+              for item in kv_list:
                 response += b"$" + str(len(item)).encode() + b"\r\n" + item + b"\r\n"
         
-        writer.write(response)
-        await writer.drain()
+           writer.write(response)
+           await writer.drain()
            
 
 
