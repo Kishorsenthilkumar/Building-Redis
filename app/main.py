@@ -266,7 +266,39 @@ async def handle_client(reader,writer):
         
            writer.write(response)
            await writer.drain()
-           
+
+
+        if command==b"xread":
+
+            args=[]
+            for i in range(6,len(parts)-1,2):
+                args.append(parts[i])
+
+            num_streams=len(args)//2
+            stream_keys=args[:num_streams]
+            start_ids=args[num_streams:]
+
+            streams_with_data=[]
+
+            for i in range(len(stream_keys)):
+                current_key=stream_keys[i]
+                current_id=start_ids[i]
+                my_stream=database.get(current_key,[])
+
+                ids=current_id.split(b"-")
+                start_ms=int(ids[0])
+                start_seq=int(ids[1]) 
+
+                matching_entries=[] 
+                for entry in my_stream:
+                    entry_id=entry["id"].split(b"-")
+                    entry_ms=int(entry_id[0])
+                    entry_seq=int(entry_id[1])  
+
+                    if (entry_ms,entry_seq)>(start_ms,start_seq):
+                        matching_entries.append(entry) 
+                if matching_entries:
+                        streams_with_data.append((current_key,matching_entries))    
 
 
 
