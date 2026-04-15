@@ -326,8 +326,8 @@ async def handle_client(reader,writer):
                         if isinstance(item, str): item = item.encode()
                         response += b"$" + str(len(item)).encode() + b"\r\n" + item + b"\r\n"
 
-                writer.write(response)
-                await writer.drain()
+            writer.write(response)
+            await writer.drain()
 
 
         if command==b"echo":
