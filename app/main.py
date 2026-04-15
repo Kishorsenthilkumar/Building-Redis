@@ -287,41 +287,48 @@ async def handle_client(reader,writer):
             start_time=asyncio.get_event_loop().time()
             
             while True:
-                streams_with_data=[]
+                streams_with_data = []
 
                 for i in range(len(stream_keys)):
-                    current_key=stream_keys[i]
-                    current_id=start_ids[i]
-                    my_stream=database.get(current_key,[])
+                    current_key = stream_keys[i]
+                    current_id = start_ids[i]
+                    my_stream = database.get(current_key, [])
 
-                    ids=current_id.split(b"-")
-                    start_ms=int(ids[0])
-                    start_seq=int(ids[1]) 
+                    ids = current_id.split(b"-")
+                    start_ms = int(ids[0])
+                    start_seq = int(ids[1]) 
  
-                    matching_entries=[] 
+                    matching_entries = [] 
                     for entry in my_stream:
-                        entry_id=entry["id"].split(b"-")
-                        entry_ms=int(entry_id[0])
-                        entry_seq=int(entry_id[1])  
+                        entry_parts = entry["id"].split(b"-") # Using a new variable name to be safe
+                        e_ms = int(entry_parts[0])
+                        e_seq = int(entry_parts[1])
 
-                        if (entry_ms,entry_seq)>(start_ms,start_seq):
+                        if (e_ms, e_seq) > (start_ms, start_seq):
                             matching_entries.append(entry) 
                             
                     if matching_entries:
-                        streams_with_data.append((current_key,matching_entries)) 
+                        streams_with_data.append((current_key, matching_entries)) 
 
+                # IF WE FOUND DATA, EXIT NOW
                 if streams_with_data:
                     break
 
-                if timeout==None:
+                # IF NO BLOCKING REQUESTED, EXIT NOW
+                if timeout is None:
                     break
                
-                if timeout>0:
-                    current_time=asyncio.get_event_loop().time()
-                    elasped_time=(current_time - start_time) * 1000
-
-                    if elasped_time>=timeout:
+                # IF BLOCKING WITH TIMEOUT
+                if timeout > 0:
+                    current_time = asyncio.get_event_loop().time()
+                    elapsed_ms = (current_time - start_time) * 1000
+                    if elapsed_ms >= timeout:
                         break
+                
+                # IF BLOCK == 0, WE JUST CONTINUE LOOPING FOREVER UNTIL DATA ARRIVES
+                        
+                # CRITICAL: GIVE XADD A CHANCE TO RUN
+                await asyncio.sleep(0.1)
         
 
         if command==b"echo":
