@@ -284,6 +284,18 @@ async def handle_client(reader,writer):
             stream_keys = args[:num_streams]
             start_ids = args[num_streams:]
 
+
+            for i in range(len(start_ids)):
+                if start_ids[i]==b"$":
+                    my_stream=database.get(stream_keys[i],[])
+                    if my_stream:
+                        latest_stream=my_stream[-1]
+                        latest_id=latest_stream["id"]
+                        start_ids[i]=latest_id
+                    else:
+                        start_ids[i]=b"0-0"
+
+
             start_time = asyncio.get_event_loop().time()
             
             # 2. The Waiting Room
