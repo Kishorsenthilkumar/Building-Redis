@@ -5,7 +5,7 @@ database={}
 
 async def handle_client(reader,writer):
     
-    in_transcation=False
+    in_transaction=False
 
     while True:
 
@@ -430,15 +430,15 @@ async def handle_client(reader,writer):
             await writer.drain()
 
         if command == b"multi":
-            in_transcation=True
+            in_transaction=True
             writer.write(b"+OK\r\n")
             await writer.drain()
         
         elif command==b"exec":
-            if not in_transcation:
+            if not in_transaction:
                 writer.write(b"-ERR EXEC without MULTI\r\n")
             else:
-                writer.write(b"(empty array)\r\n")
+                writer.write(b"*0\r\n")
             await writer.drain()
 
 
