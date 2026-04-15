@@ -316,12 +316,13 @@ async def handle_client(reader,writer):
                 if timeout==None:
                     break
                
-                if timeout>0:
+                if timeout is not None and timeout>0:
                     current_time=asyncio.get_event_loop().time()
                     elasped_time=(current_time - start_time) * 1000
 
                     if elasped_time>=timeout:
-                        break
+                        if not streams_with_data:
+                            break
 
                 await asyncio.sleep(0.1)
 
