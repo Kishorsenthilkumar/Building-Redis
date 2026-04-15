@@ -327,8 +327,12 @@ async def handle_client(reader,writer):
 
             if not streams_with_data:
                 response=b"$-1\r\n"
-            writer.write(response)
-            await writer.drain()
+                writer.write(response)
+                await writer.drain()
+            else:
+                response = f"*{len(streams_with_data)}\r\n".encode()
+                writer.write(response)
+                await writer.drain()
         
 
         if command==b"echo":
