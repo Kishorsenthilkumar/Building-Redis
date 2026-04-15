@@ -335,7 +335,7 @@ async def handle_client(reader,writer):
             # 4. Build and Send Response
             if not streams_with_data:
                 # If no data found at all, send Null Bulk String
-                response = b"$-1\r\n"
+                response = b"*-1\r\n"
                 writer.write(response)
                 await writer.drain()
 
