@@ -405,10 +405,19 @@ async def handle_client(reader,writer):
         if command==b"incr":
             key=parts[4]
 
-            value=int(database.get(key,0))
-            value=value+1
-            database[key]=str(value).encode()
-            response=f":{value}\r\n".encode()
+            record=database.get(key,0)
+
+            if record==0:
+                current_value=0
+                expiry=None
+            else:
+                current_value=int(record["value"])
+                expiry=record["expiry_time"]
+            new_value=current_value+1
+
+            database[key]=str(new_value).encode()
+
+            response=f":{new_value}\r\n".encode()
             writer.write(response)
             await writer.drain()
 
