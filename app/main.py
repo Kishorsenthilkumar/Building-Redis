@@ -298,8 +298,36 @@ async def handle_client(reader,writer):
                     if (entry_ms,entry_seq)>(start_ms,start_seq):
                         matching_entries.append(entry) 
                 if matching_entries:
-                        streams_with_data.append((current_key,matching_entries))    
+                        streams_with_data.append((current_key,matching_entries)) 
 
+            if not streams_with_data:
+                writer.write(b"$-1\r\n")
+                await writer.drain()
+                continue   
+            response = f"*{len(streams_with_data)}\r\n".encode()
+
+            for stream_key, entries in streams_with_data:
+                response += b"*2\r\n"
+                response += b"$" + str(len(stream_key)).encode() + b"\r\n" + stream_key + b"\r\n"
+                
+                response += f"*{len(entries)}\r\n".encode()
+
+                for entry in entries:
+                    response += b"*2\r\n"
+                    response += b"$" + str(len(entry["id"])).encode() + b"\r\n" + entry["id"] + b"\r\n"
+                    
+                    kv_list = []
+                    for k, v in entry["values"].items():
+                        kv_list.append(k)
+                        kv_list.append(v)
+                    
+                    response += f"*{len(kv_list)}\r\n".encode()
+                    for item in kv_list:
+                        if isinstance(item, str): item = item.encode()
+                        response += b"$" + str(len(item)).encode() + b"\r\n" + item + b"\r\n"
+
+                writer.write(response)
+                await writer.drain()
 
 
         if command==b"echo":
