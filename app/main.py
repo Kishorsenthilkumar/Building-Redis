@@ -428,6 +428,10 @@ async def handle_client(reader,writer):
             writer.write(response)
             await writer.drain()
 
+        if command == b"multi":
+            writer.write(b"+OK\r\n")
+            await writer.drain()
+
 
 
         if command==b"type":
