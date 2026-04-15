@@ -439,6 +439,7 @@ async def handle_client(reader,writer):
                 writer.write(b"-ERR EXEC without MULTI\r\n")
             else:
                 writer.write(b"*0\r\n")
+                in_transaction=False
             await writer.drain()
 
 
