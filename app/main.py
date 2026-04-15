@@ -437,14 +437,15 @@ async def handle_client(reader,writer):
         elif command==b"exec":
             if not in_transcation:
                 writer.write(b"-ERR EXEC without MULTI\r\n")
-                await writer.drain()
+            else:
+                writer.write(b"(empty array)")
+        await writer.drain()
 
 
 
         if command==b"type":
             keys=parts[4]
 
-           
 
             if keys not in database:
                 writer.write(b"+none\r\n")
