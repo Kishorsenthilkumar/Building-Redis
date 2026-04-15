@@ -402,6 +402,16 @@ async def handle_client(reader,writer):
                 writer.write(b"+OK\r\n")
                 await writer.drain()
 
+        if command==b"incr":
+            key=parts[4]
+
+            value=database.get(key,0)
+            value=value+1
+            response=b":"+str(len(value)).encode()+b"\r\n"+value+b"\r\n"
+            writer.write(response)
+            await writer.drain()
+
+
 
         if command==b"type":
             keys=parts[4]
