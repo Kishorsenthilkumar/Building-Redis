@@ -266,74 +266,106 @@ async def handle_client(reader,writer):
         
            writer.write(response)
            await writer.drain()
-
-        if command==b"xread":
-
-            timeout=None
-            args=[]
-            if parts[4].lower()==b"block":
-                timeout=int(parts[6])
-                for i in range(10,len(parts)-1,2):
+        
+        if command == b"xread":
+            timeout = None
+            args = []
+            
+            # 1. Parse arguments (handle BLOCK vs no BLOCK)
+            if parts[4].lower() == b"block":
+                timeout = int(parts[6])
+                for i in range(10, len(parts) - 1, 2):
                    args.append(parts[i])
-
             else:
-                for i in range(6,len(parts)-1,2):
+                for i in range(6, len(parts) - 1, 2):
                   args.append(parts[i])
 
-            num_streams=len(args)//2
-            stream_keys=args[:num_streams]
-            start_ids=args[num_streams:]
+            num_streams = len(args) // 2
+            stream_keys = args[:num_streams]
+            start_ids = args[num_streams:]
 
-            start_time=asyncio.get_event_loop().time()
+            start_time = asyncio.get_event_loop().time()
             
+            # 2. The Waiting Room
             while True:
-                streams_with_data=[]
+                streams_with_data = []
 
                 for i in range(len(stream_keys)):
-                    current_key=stream_keys[i]
-                    current_id=start_ids[i]
-                    my_stream=database.get(current_key,[])
+                    current_key = stream_keys[i]
+                    current_id = start_ids[i]
+                    
+                    # Grab stream from the global database
+                    my_stream = database.get(current_key, [])
 
-                    ids=current_id.split(b"-")
-                    start_ms=int(ids[0])
-                    start_seq=int(ids[1]) 
+                    ids = current_id.split(b"-")
+                    start_ms = int(ids[0])
+                    start_seq = int(ids[1]) 
  
-                    matching_entries=[] 
+                    matching_entries = [] 
                     for entry in my_stream:
-                        entry_id=entry["id"].split(b"-")
-                        entry_ms=int(entry_id[0])
-                        entry_seq=int(entry_id[1])  
+                        entry_id = entry["id"].split(b"-")
+                        entry_ms = int(entry_id[0])
+                        entry_seq = int(entry_id[1])  
 
-                        if (entry_ms,entry_seq)>(start_ms,start_seq):
+                        # Only keep entries strictly GREATER than the requested ID
+                        if (entry_ms, entry_seq) > (start_ms, start_seq):
                             matching_entries.append(entry) 
                             
                     if matching_entries:
-                        streams_with_data.append((current_key,matching_entries)) 
+                        streams_with_data.append((current_key, matching_entries)) 
 
+                # 3. Exit Conditions
                 if streams_with_data:
                     break
 
-                if timeout==None:
+                if timeout == None:
                     break
                
-                if timeout is not None and timeout>0:
-                    current_time=asyncio.get_event_loop().time()
-                    elasped_time=(current_time - start_time) * 1000
+                if timeout > 0:
+                    current_time = asyncio.get_event_loop().time()
+                    elapsed_time = (current_time - start_time) * 1000
 
-                    if elasped_time>=timeout:
+                    if elapsed_time >= timeout:
                         if not streams_with_data:
                             break
-
+                        
+                # Pause slightly to let XADD run in the background
                 await asyncio.sleep(0.1)
 
+            # 4. Build and Send Response
             if not streams_with_data:
-                response=b"$-1\r\n"
+                # If no data found at all, send Null Bulk String
+                response = b"$-1\r\n"
                 writer.write(response)
                 await writer.drain()
+
             else:
+                # If we found data, build the complex nested RESP array
                 response = f"*{len(streams_with_data)}\r\n".encode()
+
+                for stream_key, entries in streams_with_data:
+                    response += b"*2\r\n"
+                    response += b"$" + str(len(stream_key)).encode() + b"\r\n" + stream_key + b"\r\n"
+                    
+                    response += f"*{len(entries)}\r\n".encode()
+
+                    for entry in entries:
+                        response += b"*2\r\n"
+                        response += b"$" + str(len(entry["id"])).encode() + b"\r\n" + entry["id"] + b"\r\n"
+                        
+                        kv_list = []
+                        for k, v in entry["values"].items():
+                            kv_list.append(k)
+                            kv_list.append(v)
+                        
+                        response += f"*{len(kv_list)}\r\n".encode()
+                        for item in kv_list:
+                            if isinstance(item, str): item = item.encode()
+                            response += b"$" + str(len(item)).encode() + b"\r\n" + item + b"\r\n"
+               
                 writer.write(response)
                 await writer.drain()
+        
         
 
         if command==b"echo":
