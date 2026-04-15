@@ -407,7 +407,7 @@ async def handle_client(reader,writer):
 
             value=int(database.get(key,0))
             value=value+1
-            database[key]=value
+            database[key]=str(value).encode()
             response=f":{value}\r\n".encode()
             writer.write(response)
             await writer.drain()
