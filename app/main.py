@@ -270,9 +270,16 @@ async def handle_client(reader,writer):
 
         if command==b"xread":
 
+            timeout=None
             args=[]
-            for i in range(6,len(parts)-1,2):
-                args.append(parts[i])
+            if parts[4].lower()==b"block":
+                timeout=int(parts[6])
+                for i in range(10,len(parts)-1,2):
+                   args.append(parts[i])
+
+            else:
+                for i in range(6,len(parts)-1,2):
+                  args.append(parts[i])
 
             num_streams=len(args)//2
             stream_keys=args[:num_streams]
