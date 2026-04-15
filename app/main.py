@@ -4,7 +4,8 @@ import time
 database={}
 
 async def handle_client(reader,writer):
-
+    
+    in_transcation=False
 
     while True:
 
@@ -429,8 +430,14 @@ async def handle_client(reader,writer):
             await writer.drain()
 
         if command == b"multi":
+            in_transcation=True
             writer.write(b"+OK\r\n")
             await writer.drain()
+        
+        elif command==b"exec":
+            if not in_transcation:
+                writer.write(b"-ERR EXEC without MULTI\r\n")
+                await writer.drain()
 
 
 
