@@ -328,7 +328,7 @@ async def handle_client(reader,writer):
                 # IF BLOCK == 0, WE JUST CONTINUE LOOPING FOREVER UNTIL DATA ARRIVES
                         
                 # CRITICAL: GIVE XADD A CHANCE TO RUN
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(2)
         
 
         if command==b"echo":
