@@ -267,7 +267,6 @@ async def handle_client(reader,writer):
            writer.write(response)
            await writer.drain()
 
-
         if command==b"xread":
 
             timeout=None
@@ -285,57 +284,45 @@ async def handle_client(reader,writer):
             stream_keys=args[:num_streams]
             start_ids=args[num_streams:]
 
-            streams_with_data=[]
+            start_time=asyncio.get_event_loop().time()
+            
+            while True:
+                streams_with_data=[]
 
-            for i in range(len(stream_keys)):
-                current_key=stream_keys[i]
-                current_id=start_ids[i]
-                my_stream=database.get(current_key,[])
+                for i in range(len(stream_keys)):
+                    current_key=stream_keys[i]
+                    current_id=start_ids[i]
+                    my_stream=database.get(current_key,[])
 
-                ids=current_id.split(b"-")
-                start_ms=int(ids[0])
-                start_seq=int(ids[1]) 
+                    ids=current_id.split(b"-")
+                    start_ms=int(ids[0])
+                    start_seq=int(ids[1]) 
+ 
+                    matching_entries=[] 
+                    for entry in my_stream:
+                        entry_id=entry["id"].split(b"-")
+                        entry_ms=int(entry_id[0])
+                        entry_seq=int(entry_id[1])  
 
-                matching_entries=[] 
-                for entry in my_stream:
-                    entry_id=entry["id"].split(b"-")
-                    entry_ms=int(entry_id[0])
-                    entry_seq=int(entry_id[1])  
-
-                    if (entry_ms,entry_seq)>(start_ms,start_seq):
-                        matching_entries.append(entry) 
-                if matching_entries:
+                        if (entry_ms,entry_seq)>(start_ms,start_seq):
+                            matching_entries.append(entry) 
+                            
+                    if matching_entries:
                         streams_with_data.append((current_key,matching_entries)) 
 
-            if not streams_with_data:
-                writer.write(b"$-1\r\n")
-                await writer.drain()
-                continue   
-            response = f"*{len(streams_with_data)}\r\n".encode()
+                if streams_with_data:
+                    break
 
-            for stream_key, entries in streams_with_data:
-                response += b"*2\r\n"
-                response += b"$" + str(len(stream_key)).encode() + b"\r\n" + stream_key + b"\r\n"
-                
-                response += f"*{len(entries)}\r\n".encode()
+                if timeout==None:
+                    break
+               
+                if timeout>0:
+                    current_time=asyncio.get_event_loop().time()
+                    elasped_time=(current_time - start_time) * 1000
 
-                for entry in entries:
-                    response += b"*2\r\n"
-                    response += b"$" + str(len(entry["id"])).encode() + b"\r\n" + entry["id"] + b"\r\n"
-                    
-                    kv_list = []
-                    for k, v in entry["values"].items():
-                        kv_list.append(k)
-                        kv_list.append(v)
-                    
-                    response += f"*{len(kv_list)}\r\n".encode()
-                    for item in kv_list:
-                        if isinstance(item, str): item = item.encode()
-                        response += b"$" + str(len(item)).encode() + b"\r\n" + item + b"\r\n"
-
-            writer.write(response)
-            await writer.drain()
-
+                    if elasped_time>=timeout:
+                        break
+        
 
         if command==b"echo":
             argument=parts[4]
