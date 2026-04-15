@@ -438,8 +438,8 @@ async def handle_client(reader,writer):
             if not in_transcation:
                 writer.write(b"-ERR EXEC without MULTI\r\n")
             else:
-                writer.write(b"(empty array)")
-        await writer.drain()
+                writer.write(b"(empty array)\r\n")
+            await writer.drain()
 
 
 
