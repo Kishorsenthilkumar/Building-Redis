@@ -415,7 +415,7 @@ async def handle_client(reader,writer):
                 expiry=record["expiry_time"]
             new_value=current_value+1
 
-            database[key]=str(new_value).encode()
+            database[key]={"value":str(new_value).encode(),"expiry_time":expiry}
 
             response=f":{new_value}\r\n".encode()
             writer.write(response)
