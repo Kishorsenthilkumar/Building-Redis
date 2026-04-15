@@ -411,7 +411,14 @@ async def handle_client(reader,writer):
                 current_value=0
                 expiry=None
             else:
-                current_value=int(record["value"])
+                try:
+                   current_value=int(record["value"])
+                except ValueError:
+                    error_msg = b"-ERR value is not an integer or out of range\r\n"
+                    writer.write(error_msg)
+                    await writer.drain()
+                    continue
+
                 expiry=record["expiry_time"]
             new_value=current_value+1
 
