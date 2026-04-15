@@ -405,9 +405,10 @@ async def handle_client(reader,writer):
         if command==b"incr":
             key=parts[4]
 
-            value=database.get(key,0)
+            value=int(database.get(key,0))
             value=value+1
-            response=b":"+str(len(value)).encode()+b"\r\n"+value+b"\r\n"
+            database[key]=value
+            response=f":{value}\r\n".encode()
             writer.write(response)
             await writer.drain()
 
