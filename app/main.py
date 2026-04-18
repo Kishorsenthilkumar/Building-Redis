@@ -480,7 +480,7 @@ async def handle_client(reader,writer):
 
         if command==b"get":
             key=parts[4]
-            value=database[key]
+            value=database.get(key,[])
             entry=database.get(key)
 
             if not entry:
