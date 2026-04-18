@@ -33,6 +33,7 @@ async def process_command(parts,writer,database):
                     error_msg = b"-ERR value is not an integer or out of range\r\n"
                     writer.write(error_msg)
                     await writer.drain()
+                    return
                     
 
                 expiry=record["expiry_time"]
@@ -119,7 +120,7 @@ async def handle_client(reader,writer):
                 writer.write(b"+OK\r\n")
                 in_transaction=False
                 command_queue=[]
-                
+
               await writer.drain()
 
         else:
