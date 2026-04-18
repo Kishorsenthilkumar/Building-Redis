@@ -110,6 +110,18 @@ async def handle_client(reader,writer):
                 command_queue=[]
 
             await writer.drain()
+
+        elif command==b"discard":
+              
+              if not in_transaction:
+                writer.write(b"-ERR DISCARD without MULTI\r\n")
+              else:
+                writer.write(b"+OK\r\n")
+                in_transaction=False
+                command_queue=[]
+                
+              await writer.drain()
+
         else:
             await process_command(parts,writer,database)        
 
