@@ -3,6 +3,71 @@ import asyncio
 import time
 database={}
 
+async def process_command(parts,writer,database):
+
+      command=parts[2].lower()
+      if command==b"set":
+                key=parts[4]
+                value=parts[6]
+                expiry_time=None
+
+                if len(parts)>8 and parts[8].lower()==b"px":
+                    ms_to_live=int(parts[10])
+                    expiry_time=time.time()+(ms_to_live/1000)
+                database[key]={"value":value,"expiry_time":expiry_time}
+                writer.write(b"+OK\r\n")
+                await writer.drain()
+
+      if command==b"incr":
+            key=parts[4]
+
+            record=database.get(key,0)
+
+            if record==0:
+                current_value=0
+                expiry=None
+            else:
+                try:
+                   current_value=int(record["value"])
+                except ValueError:
+                    error_msg = b"-ERR value is not an integer or out of range\r\n"
+                    writer.write(error_msg)
+                    await writer.drain()
+                    
+
+                expiry=record["expiry_time"]
+            new_value=current_value+1
+
+            database[key]={"value":str(new_value).encode(),"expiry_time":expiry}
+
+            response=f":{new_value}\r\n".encode()
+            writer.write(response)
+            await writer.drain()
+
+      if command==b"get":
+            key=parts[4]
+            value=database.get(key,[])
+            entry=database.get(key)
+
+            if not entry:
+                writer.write(b"$-1\r\n")
+
+            else:
+                now = time.time()
+                expiry = entry.get("expiry_time") # Use the same name you used in SET
+
+                if expiry is not None and now > expiry:
+                   # IT'S EXPIRED
+                   del database[key]
+                   writer.write(b"$-1\r\n")
+                else:
+                      # IT'S VALID: Get the actual bytes from the dictionary
+                  val = entry["value"]
+                  response = b"$" + str(len(val)).encode() + b"\r\n" + val + b"\r\n"
+                  writer.write(response)
+
+
+
 async def handle_client(reader,writer):
     
     in_transaction=False
@@ -26,6 +91,27 @@ async def handle_client(reader,writer):
             writer.write(b"+QUEUED\r\n")
             await writer.drain()
             continue
+
+        if command == b"multi":
+            in_transaction=True
+            writer.write(b"+OK\r\n")
+            await writer.drain()
+        
+        elif command==b"exec":
+            if not in_transaction:
+                writer.write(b"-ERR EXEC without MULTI\r\n")
+            else:
+                writer.write(f"*{len(command_queue)}\r\n".encode())
+                
+
+                for comm in command_queue:
+                    await process_command(comm,writer,database)
+                in_transaction=False
+                command_queue=[]
+
+            await writer.drain()
+        else:
+            await process_command(parts,writer,database)        
 
             
 
@@ -399,57 +485,6 @@ async def handle_client(reader,writer):
             #ensures data is moved from buffer to client
             await writer.drain() 
                 
-               
-        if command==b"set":
-                key=parts[4]
-                value=parts[6]
-                expiry_time=None
-
-                if len(parts)>8 and parts[8].lower()==b"px":
-                    ms_to_live=int(parts[10])
-                    expiry_time=time.time()+(ms_to_live/1000)
-                database[key]={"value":value,"expiry_time":expiry_time}
-                writer.write(b"+OK\r\n")
-                await writer.drain()
-
-        if command==b"incr":
-            key=parts[4]
-
-            record=database.get(key,0)
-
-            if record==0:
-                current_value=0
-                expiry=None
-            else:
-                try:
-                   current_value=int(record["value"])
-                except ValueError:
-                    error_msg = b"-ERR value is not an integer or out of range\r\n"
-                    writer.write(error_msg)
-                    await writer.drain()
-                    continue
-
-                expiry=record["expiry_time"]
-            new_value=current_value+1
-
-            database[key]={"value":str(new_value).encode(),"expiry_time":expiry}
-
-            response=f":{new_value}\r\n".encode()
-            writer.write(response)
-            await writer.drain()
-
-        if command == b"multi":
-            in_transaction=True
-            writer.write(b"+OK\r\n")
-            await writer.drain()
-        
-        elif command==b"exec":
-            if not in_transaction:
-                writer.write(b"-ERR EXEC without MULTI\r\n")
-            else:
-                writer.write(b"*0\r\n")
-                in_transaction=False
-            await writer.drain()
 
 
 
@@ -478,28 +513,7 @@ async def handle_client(reader,writer):
 
 
 
-        if command==b"get":
-            key=parts[4]
-            value=database.get(key,[])
-            entry=database.get(key)
-
-            if not entry:
-                writer.write(b"$-1\r\n")
-
-            else:
-                now = time.time()
-                expiry = entry.get("expiry_time") # Use the same name you used in SET
-
-                if expiry is not None and now > expiry:
-                   # IT'S EXPIRED
-                   del database[key]
-                   writer.write(b"$-1\r\n")
-                else:
-                      # IT'S VALID: Get the actual bytes from the dictionary
-                  val = entry["value"]
-                  response = b"$" + str(len(val)).encode() + b"\r\n" + val + b"\r\n"
-                  writer.write(response)
-
+       
         
                   
     
@@ -520,3 +534,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
