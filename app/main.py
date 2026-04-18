@@ -6,6 +6,7 @@ database={}
 async def handle_client(reader,writer):
     
     in_transaction=False
+    command_queue=[]
 
     while True:
 
@@ -19,6 +20,14 @@ async def handle_client(reader,writer):
         command=parts[2].lower()
         if len(parts)<3:
             continue
+
+        if in_transaction and command not in [b"exec",b"multi",b"discard"]:
+            command_queue.append(parts)
+            writer.write(b"+QUEUED\r\n")
+            await writer.drain()
+            continue
+
+            
 
         if command==b"ping":
             writer.write(b"+PONG\r\n")
