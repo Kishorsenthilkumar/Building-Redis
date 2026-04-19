@@ -569,6 +569,10 @@ async def main():
         master_writer.write(ping_command)
         await master_writer.drain()
 
+        replconf=f"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n{args.port}\r\n"
+        master_writer.write(replconf)
+        await master_writer.drain()
+
     else:
         role="master"
 
