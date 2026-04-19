@@ -4,7 +4,7 @@ import time
 import argparse
 database={}
 
-async def process_command(parts,writer,database):
+async def process_command(parts,writer,database,role):
 
       command=parts[2].lower()
       if command==b"set":
@@ -68,7 +68,7 @@ async def process_command(parts,writer,database):
 
       if command==b"info":
 
-        info_text="# Replication\r\nrole:master\r\n"
+        info_text=f"# Replication\r\nrole:{role}\r\n"
 
         response=f"${len(info_text)}\r\n{info_text}\r\n".encode()
         writer.write(response)
@@ -77,7 +77,7 @@ async def process_command(parts,writer,database):
 
         
 
-async def handle_client(reader,writer):
+async def handle_client(reader,writer,role):
     
     in_transaction=False
     command_queue=[]
@@ -114,7 +114,7 @@ async def handle_client(reader,writer):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database)
+                    await process_command(comm,writer,database,role)
                 in_transaction=False
                 command_queue=[]
 
@@ -132,7 +132,7 @@ async def handle_client(reader,writer):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database)        
+            await process_command(parts,writer,database,role)        
 
             
 
@@ -547,12 +547,20 @@ async def main():
     
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",default=6379,type=int)
+    parser.add_argument("--replicaof",nargs="+")
+
+
     args=parser.parse_args()
 
     server_port=args.port
 
+    if args.replicaof:
+        role="slave"
+    else:
+        role="master"
 
-    server = await asyncio.start_server(handle_client,"localhost",server_port)
+
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role),"localhost",server_port)
 
     async with server:
         await server.serve_forever()
