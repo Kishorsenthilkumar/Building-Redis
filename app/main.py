@@ -86,7 +86,7 @@ async def process_command(parts,writer,database,role):
 
 
       if command==b"psync":
-        writer.write(f"+FULLRESYNC{master_replid} 0\r\n".encode())
+        writer.write(f"+FULLRESYNC {master_replid} 0\r\n".encode())
       await writer.drain()
 
         
