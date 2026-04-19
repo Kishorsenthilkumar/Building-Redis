@@ -1,6 +1,7 @@
 import socket  
 import asyncio
 import time
+import argparse
 database={}
 
 async def process_command(parts,writer,database):
@@ -55,14 +56,12 @@ async def process_command(parts,writer,database):
 
             else:
                 now = time.time()
-                expiry = entry.get("expiry_time") # Use the same name you used in SET
+                expiry = entry.get("expiry_time") 
 
                 if expiry is not None and now > expiry:
-                   # IT'S EXPIRED
                    del database[key]
                    writer.write(b"$-1\r\n")
                 else:
-                      # IT'S VALID: Get the actual bytes from the dictionary
                   val = entry["value"]
                   response = b"$" + str(len(val)).encode() + b"\r\n" + val + b"\r\n"
                   writer.write(response)
@@ -537,7 +536,14 @@ async def handle_client(reader,writer):
 
 async def main():
     
-    server = await asyncio.start_server(handle_client,"localhost",6379)
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--port",default=6379,type=int)
+    args=parser.parse_args()
+
+    server_port=args.port
+
+
+    server = await asyncio.start_server(handle_client,"localhost",server_port)
 
     async with server:
         await server.serve_forever()
