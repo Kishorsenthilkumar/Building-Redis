@@ -3,7 +3,7 @@ import asyncio
 import time
 import argparse
 database={}
-master_replid="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 async def process_command(parts,writer,database,role):
 
@@ -69,10 +69,10 @@ async def process_command(parts,writer,database,role):
 
       if command==b"info":
 
-        
+        master_repl="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
         offset="master_repl_offset:0"
 
-        info_text=f"# Replication\r\nrole:{role}\r\n{master_replid}\r\n{offset}"
+        info_text=f"# Replication\r\nrole:{role}\r\n{master_repl}\r\n{offset}"
 
         response=f"${len(info_text)}\r\n{info_text}\r\n".encode()
         writer.write(response)
