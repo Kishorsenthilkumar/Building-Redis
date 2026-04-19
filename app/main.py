@@ -68,7 +68,10 @@ async def process_command(parts,writer,database,role):
 
       if command==b"info":
 
-        info_text=f"# Replication\r\nrole:{role}\r\n"
+        master_replid="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+        offset="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+
+        info_text=f"# Replication\r\nrole:{role}\r\n{master_replid}\r\n{offset}"
 
         response=f"${len(info_text)}\r\n{info_text}\r\n".encode()
         writer.write(response)
