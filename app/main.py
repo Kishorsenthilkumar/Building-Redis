@@ -559,6 +559,15 @@ async def main():
 
     if args.replicaof:
         role="slave"
+        master_port=args.replicaof[1]
+        hostname=args.replicaof[0]
+
+        master_reader,master_writer=await asyncio.open_connection(hostname,master_port)
+
+        ping_command=b"*1\r\n$4\r\nPING\r\n"
+        master_writer.write(ping_command)
+        await master_writer.drain()
+
     else:
         role="master"
 
