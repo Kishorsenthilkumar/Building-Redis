@@ -575,7 +575,7 @@ async def main():
         await master_writer.drain()
         await master_reader.read(1024)
 
-        capa=f"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n"
+        capa=f"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n".encode()
         master_writer.write(capa)
         await master_writer.drain()
         await master_reader.read(1024)
