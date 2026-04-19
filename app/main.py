@@ -165,7 +165,7 @@ async def handle_client(reader,writer,role,replicas):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database,role)        
+            await process_command(parts,writer,database,role,replicas)        
 
             
 
