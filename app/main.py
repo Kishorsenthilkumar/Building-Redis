@@ -66,7 +66,16 @@ async def process_command(parts,writer,database):
                   response = b"$" + str(len(val)).encode() + b"\r\n" + val + b"\r\n"
                   writer.write(response)
 
+      if command==b"info":
 
+        info_text="# Replication\r\nrole:master\r\n"
+
+        response=f"${len(info_text)}\r\n{info_text}\r\n".encode()
+        writer.write(response)
+
+      await writer.drain()
+
+        
 
 async def handle_client(reader,writer):
     
