@@ -101,10 +101,10 @@ async def process_command(parts,writer,database,role,replicas):
         header=f"${str(len(rdb_file))}\r\n".encode()
         response=header+rdb_file
         writer.write(response)
-       
+        replicas.append(writer)
 
       await writer.drain()
-      replicas.append(writer)
+      
 
         
 
