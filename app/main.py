@@ -3,6 +3,7 @@ import asyncio
 import time
 import argparse
 database={}
+master_replid="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 async def process_command(parts,writer,database,role):
 
@@ -68,7 +69,7 @@ async def process_command(parts,writer,database,role):
 
       if command==b"info":
 
-        master_replid="master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+        
         offset="master_repl_offset:0"
 
         info_text=f"# Replication\r\nrole:{role}\r\n{master_replid}\r\n{offset}"
@@ -81,6 +82,11 @@ async def process_command(parts,writer,database,role):
 
       if command==b"replconf":
         writer.write(b"+OK\r\n")
+      await writer.drain()
+
+
+      if command==b"psync":
+        writer.write(f"+FULLRESYNC{master_replid} 0\r\n".encode())
       await writer.drain()
 
         
