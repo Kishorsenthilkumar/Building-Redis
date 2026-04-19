@@ -78,6 +78,11 @@ async def process_command(parts,writer,database,role):
 
       await writer.drain()
 
+
+      if command==b"replconf":
+        writer.write(b"+OK\r\n")
+      await writer.drain()
+
         
 
 async def handle_client(reader,writer,role):
