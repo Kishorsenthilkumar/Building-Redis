@@ -559,8 +559,9 @@ async def main():
 
     if args.replicaof:
         role="slave"
-        master_port=args.replicaof[1]
-        hostname=args.replicaof[0]
+        rep=args.replicaof[0].split(" ")
+        master_port=rep[1]
+        hostname=rep[0]
 
         master_reader,master_writer=await asyncio.open_connection(hostname,master_port)
 
