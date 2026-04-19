@@ -575,10 +575,14 @@ async def main():
         await master_writer.drain()
         await master_reader.read(1024)
 
-        capa=f"*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n".encode()
+        capa="*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$6\r\npsync2\r\n".encode()
         master_writer.write(capa)
         await master_writer.drain()
         await master_reader.read(1024)
+
+        psync=b"*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"
+        master_writer.write(psync)
+        await master_writer.drain()
 
     else:
         role="master"
