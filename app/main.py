@@ -5,13 +5,14 @@ import argparse
 database={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
-async def process_command(parts,writer,database,role):
+async def process_command(parts,writer,database,role,replicas):
 
       command=parts[2].lower()
       if command==b"set":
                 key=parts[4]
                 value=parts[6]
                 expiry_time=None
+                
 
                 if len(parts)>8 and parts[8].lower()==b"px":
                     ms_to_live=int(parts[10])
@@ -19,6 +20,15 @@ async def process_command(parts,writer,database,role):
                 database[key]={"value":value,"expiry_time":expiry_time}
                 writer.write(b"+OK\r\n")
                 await writer.drain()
+
+                propagate_command = f"*{len(parts)}\r\n".encode()
+                for p in parts:
+                     propagate_command += f"${len(p)}\r\n".encode() + p + b"\r\n"
+                
+                for replica_writer in replicas:
+                    replica_writer.write(propagate_command)
+                    await replica_writer.drain()
+
 
       if command==b"incr":
             key=parts[4]
@@ -96,10 +106,11 @@ async def process_command(parts,writer,database,role):
        
 
       await writer.drain()
+      replicas.append(writer)
 
         
 
-async def handle_client(reader,writer,role):
+async def handle_client(reader,writer,role,replicas):
     
     in_transaction=False
     command_queue=[]
@@ -607,7 +618,8 @@ async def main():
         role="master"
 
 
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role),"localhost",server_port)
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
+    replicas=[]
 
     async with server:
         await server.serve_forever()
