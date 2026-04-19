@@ -145,7 +145,7 @@ async def handle_client(reader,writer,role,replicas):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database,role)
+                    await process_command(comm,writer,database,role,replicas)
                 in_transaction=False
                 command_queue=[]
 
