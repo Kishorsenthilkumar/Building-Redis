@@ -21,9 +21,7 @@ async def process_command(parts,writer,database,role,replicas):
                 writer.write(b"+OK\r\n")
                 await writer.drain()
 
-                propagate_command = f"*{len(parts)}\r\n".encode()
-                for p in parts:
-                     propagate_command += f"${len(p)}\r\n".encode() + p + b"\r\n"
+                propagate_command=b"\r\n".join(parts)
                 
                 for replica_writer in replicas:
                     replica_writer.write(propagate_command)
