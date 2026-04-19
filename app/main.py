@@ -568,10 +568,12 @@ async def main():
         ping_command=b"*1\r\n$4\r\nPING\r\n"
         master_writer.write(ping_command)
         await master_writer.drain()
+        await master_reader.read(1024)
 
-        replconf=f"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n{args.port}\r\n"
+        replconf=f"*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n${len(str(args.port))}\r\n{args.port}\r\n".encode()
         master_writer.write(replconf)
         await master_writer.drain()
+        await master_reader.read(1024)
 
     else:
         role="master"
