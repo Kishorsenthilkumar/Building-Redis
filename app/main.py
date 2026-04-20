@@ -5,6 +5,36 @@ import argparse
 database={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
+
+async def background_conn(master_reader,database):
+
+    while True:
+
+        data=await master_reader.read(1024)
+
+        if data ==b"":
+            continue
+        
+        data_list=data.split(b"*")
+
+        for chunk in data_list:
+
+            if chunk==b"":
+                continue
+
+            clean_command=b"*"+chunk
+            part=clean_command.split(b"\r\n")
+
+            if len(part)>2 and part[2].upper()==b"SET":
+                key=part[4]
+                value=part[6]
+
+                database[key]=value
+
+        
+            
+
+
 async def process_command(parts,writer,database,role,replicas):
 
       command=parts[2].lower()
@@ -102,6 +132,8 @@ async def process_command(parts,writer,database,role,replicas):
         response=header+rdb_file
         writer.write(response)
         replicas.append(writer)
+
+       
 
       await writer.drain()
       
@@ -592,6 +624,8 @@ async def main():
         hostname=rep[0]
 
         master_reader,master_writer=await asyncio.open_connection(hostname,master_port)
+
+        asyncio.create_task(background_conn(master_reader,database))
 
         ping_command=b"*1\r\n$4\r\nPING\r\n"
         master_writer.write(ping_command)
