@@ -646,6 +646,9 @@ async def main():
         master_writer.write(psync)
         await master_writer.drain()
 
+        await master_reader.read(1024) 
+        await master_reader.read(1024)
+
         asyncio.create_task(background_conn(master_reader,database))
 
     else:
