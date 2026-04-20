@@ -625,7 +625,7 @@ async def main():
 
         master_reader,master_writer=await asyncio.open_connection(hostname,master_port)
 
-        asyncio.create_task(background_conn(master_reader,database))
+        
 
         ping_command=b"*1\r\n$4\r\nPING\r\n"
         master_writer.write(ping_command)
@@ -645,6 +645,8 @@ async def main():
         psync=b"*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"
         master_writer.write(psync)
         await master_writer.drain()
+
+        asyncio.create_task(background_conn(master_reader,database))
 
     else:
         role="master"
