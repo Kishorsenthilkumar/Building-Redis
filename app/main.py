@@ -13,7 +13,7 @@ async def background_conn(master_reader,database):
         data=await master_reader.read(1024)
 
         if data ==b"":
-            continue
+            break
         
         data_list=data.split(b"*")
 
@@ -657,8 +657,11 @@ async def main():
         master_writer.write(psync)
         await master_writer.drain()
 
-        await master_reader.read(1024) 
-        await master_reader.read(1024)
+        await master_reader.readuntil(b"\n")
+        rdb_length_line = await master_reader.readuntil(b"\n")
+        rdb_length = int(rdb_length_line[1:-2])
+        await master_reader.readexactly(rdb_length)
+        
 
         asyncio.create_task(background_conn(master_reader,database))
 
