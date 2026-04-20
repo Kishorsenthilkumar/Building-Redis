@@ -6,7 +6,7 @@ database={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 
-async def background_conn(master_reader,database):
+async def background_conn(master_reader,master_writer,database):
 
     while True:
 
@@ -30,6 +30,11 @@ async def background_conn(master_reader,database):
                 value=part[6]
 
                 database[key]={"value":value,"expiry_time":None}
+
+            if len(part) > 4 and part[2].upper() == b"REPLCONF" and part[4].upper() == b"GETACK":
+                ack_response = b"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n"
+                master_writer.write(ack_response)
+                await master_writer.drain()
 
         
             
@@ -663,7 +668,9 @@ async def main():
         await master_reader.readexactly(rdb_length)
         
 
-        asyncio.create_task(background_conn(master_reader,database))
+        asyncio.create_task(background_conn(master_reader,master_writer,database))
+
+
 
     
     
