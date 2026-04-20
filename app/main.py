@@ -608,7 +608,7 @@ async def handle_client(reader,writer,role,replicas):
 
 async def main():
 
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
+    
     
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",default=6379,type=int)
@@ -621,6 +621,14 @@ async def main():
 
     if args.replicaof:
         role="slave"
+    else:
+        role="master"
+    
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
+
+
+
+    if args.replicaof:
         rep=args.replicaof[0].split(" ")
         master_port=rep[1]
         hostname=rep[0]
@@ -653,9 +661,8 @@ async def main():
 
         asyncio.create_task(background_conn(master_reader,database))
 
-    else:
-        role="master"
-
+    
+    
 
     
     replicas=[]
