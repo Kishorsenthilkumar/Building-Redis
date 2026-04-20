@@ -607,6 +607,8 @@ async def handle_client(reader,writer,role,replicas):
     writer.close()
 
 async def main():
+
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
     
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",default=6379,type=int)
@@ -655,7 +657,7 @@ async def main():
         role="master"
 
 
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
+    
     replicas=[]
 
     async with server:
