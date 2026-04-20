@@ -29,7 +29,7 @@ async def background_conn(master_reader,database):
                 key=part[4]
                 value=part[6]
 
-                database[key]={"value":value}
+                database[key]={"value":value,"expiry_time":None}
 
         
             
