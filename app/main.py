@@ -624,6 +624,7 @@ async def main():
     else:
         role="master"
     
+    replicas=[]
     server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
 
 
@@ -665,7 +666,7 @@ async def main():
     
 
     
-    replicas=[]
+    
 
     async with server:
         await server.serve_forever()
