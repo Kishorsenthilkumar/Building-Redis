@@ -202,10 +202,10 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         if parts[4].lower()==b"get":
 
              key=parts[6].lower().decode()
-             key_len=str(len(parts[6])).encode()
+             key_len=len(parts[6])
 
              ans=server_config[key]
-             ans_len=str(len(ans)).encode()
+             ans_len=len(ans)
 
              response=f"*2\r\n${key_len}\r\n{key}\r\n${ans_len}\r\n{ans}\r\n".encode()
              writer.write(response)
