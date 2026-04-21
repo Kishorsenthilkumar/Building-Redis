@@ -294,6 +294,7 @@ def  dbfile_manager(dir_path):
                 expiry_size = read_length(file)
 
                 for _ in range(hash_table_size):
+                    value_type = file.read(1)
                     key = read_string(file)
                     keys.append(key)
                     value = read_string(file)
