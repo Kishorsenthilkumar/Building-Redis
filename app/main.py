@@ -264,11 +264,11 @@ def read_string(rdbfile):
     if isinstance(length_data, tuple) and length_data[0] is True:
         format_type = length_data[1]
 
-    if format_type == 0:
+        if format_type == 0:
             return str(rdbfile.read(1)[0]).encode()
-    elif format_type == 1:
+        elif format_type == 1:
             return str(int.from_bytes(rdbfile.read(2), "little")).encode()
-    elif format_type == 2:
+        elif format_type == 2:
             return str(int.from_bytes(rdbfile.read(4), "little")).encode()
 
     return rdbfile.read(length_data)
