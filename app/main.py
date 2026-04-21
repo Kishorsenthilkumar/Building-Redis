@@ -198,18 +198,18 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(response)
             await writer.drain()
 
-        if command==b"config":
-            if parts[4].lower()==b"get":
+      if command==b"config":
+        if parts[4].lower()==b"get":
 
-                key=parts[6].lower().decode()
-                key_len=str(len(parts[6])).encode()
+             key=parts[6].lower().decode()
+             key_len=str(len(parts[6])).encode()
 
-                ans=server_config[key]
-                ans_len=str(len(ans)).encode()
+             ans=server_config[key]
+             ans_len=str(len(ans)).encode()
 
-                response=f"*2\r\n${key_len}\r\n{key}\r\n{ans_len}\r\n{ans}".encode()
-                writer.write(response)
-                await writer.drain()
+             response=f"*2\r\n${key_len}\r\n{key}\r\n{ans_len}\r\n{ans}".encode()
+             writer.write(response)
+             await writer.drain()
 
 
         
