@@ -65,8 +65,9 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 propagate_command=b"\r\n".join(parts)
                 
                 for my_replica_profile in replicas:
-                    writer.write(propagate_command)
-                    await writer.drain()
+                    rep_writer = replica_profile["writer"]
+                    rep_writer.write(propagate_command)
+                    await rep_writer.drain()
 
                 master_state["offset"] += len(propagate_command)
 
