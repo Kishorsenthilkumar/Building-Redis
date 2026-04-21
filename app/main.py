@@ -36,7 +36,7 @@ async def background_conn(master_reader,master_writer,database):
             if len(part) > 4 and part[2].upper() == b"REPLCONF" and part[4].upper() == b"GETACK":
 
                 offset_str=str(offset)
-                ack_response = f"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n{(len(offset_str))}\r\n".encode()
+                ack_response = f"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n${len(offset_str)}\r\n{offset_str}\r\n".encode()
                 master_writer.write(ack_response)
                 await master_writer.drain()
 
