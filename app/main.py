@@ -2,6 +2,7 @@ import socket
 import asyncio
 import time
 import argparse
+import os
 database={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
@@ -207,9 +208,102 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
              ans=server_config[key]
              ans_len=len(ans)
 
+             if key=="" or ans=="":
+                response=b"*0\r\n"
+                writer.write(response)
+                await response.drain()
+
              response=f"*2\r\n${key_len}\r\n{key}\r\n${ans_len}\r\n{ans}\r\n".encode()
              writer.write(response)
              await writer.drain()
+       
+        if command==b"keys" and parts[4]==b"*":
+
+            dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
+
+            if not os.path.exists(dir_path):
+
+                response=b"*0\r\n"
+                writer.write(response)
+                await writer.drain()
+            else:
+                my_keys=dbfile_manager(dir_path)
+
+                response = f"*{len(my_keys)}\r\n".encode()
+
+                for k in my_keys:
+                    response += b"$" + str(len(k)).encode() + b"\r\n" + k + b"\r\n"
+
+                writer.write(response)
+                await writer.drain()
+
+#helper for rdbfile key retrival
+def read_length(rdbfile):
+
+    first_byte = rdbfile.read(1)[0]
+    first_two_bits = first_byte >> 6
+
+    if first_two_bits == 0:
+        return first_byte & 0x3F
+
+    elif first_two_bits == 1:
+        next_byte = rdbfile.read(1)[0]
+        return ((first_byte & 0x3F) << 8) | next_byte
+
+    elif first_two_bits == 2:
+        return int.from_bytes(rdbfile.read(4), "big")
+
+    elif first_two_bits == 3:
+        # This is the special flag that says "an integer is coming, not a string"
+        return (True, first_byte & 0x3F)
+
+
+def read_string(rdbfile):
+    length_data = read_length(rdbfile)
+
+    if isinstance(length_data, tuple) and length_data[0] is True:
+        format_type = length_data[1]
+
+    if format_type == 0:
+            return str(rdbfile.read(1)[0]).encode()
+    elif format_type == 1:
+            return str(int.from_bytes(rdbfile.read(2), "little")).encode()
+    elif format_type == 2:
+            return str(int.from_bytes(rdbfile.read(4), "little")).encode()
+
+    return rdbfile.read(length_data)
+
+
+#key=dir ans=rdbfile name
+async def  dbfile_manager(dir_path):
+
+    with open(dir_path,"rb") as file:
+
+        head=file.read(9)
+        keys=[]
+
+        while True:
+
+            byte=file.read(1)
+
+            if byte==b"":
+                break
+
+            if byte[0] == 251:
+                hash_table_size = read_length(file)
+                expiry_size = read_length(file)
+
+                for _ in range(hash_table_size):
+                    key = read_string(file)
+                    keys.append(key)
+                    value = read_string(file)
+
+                break
+        
+    return keys
+
+
+        
 
 
         
