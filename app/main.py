@@ -217,7 +217,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
              writer.write(response)
              await writer.drain()
        
-        if command==b"keys" and parts[4]==b"*":
+      if command==b"keys" and parts[4]==b"*":
 
             dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
@@ -275,7 +275,7 @@ def read_string(rdbfile):
 
 
 #key=dir ans=rdbfile name
-async def  dbfile_manager(dir_path):
+def  dbfile_manager(dir_path):
 
     with open(dir_path,"rb") as file:
 
