@@ -147,6 +147,15 @@ async def process_command(parts,writer,database,role,replicas):
        
 
       await writer.drain()
+
+
+      if command==b"wait":
+        replica_len=str(len(replicas))
+
+        response=f":{replica_len}\r\n".encode()
+        writer.write(response)
+
+        await writer.drain()
       
 
         
