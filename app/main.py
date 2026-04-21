@@ -46,7 +46,7 @@ async def background_conn(master_reader,master_writer,database):
             
 
 
-async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile):
+async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config):
 
       command=parts[2].lower()
       if command==b"set":
@@ -198,10 +198,23 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(response)
             await writer.drain()
 
+        if command==b"config":
+            if parts[4].lower()==b"get":
+
+                key=parts[6].lower().decode()
+                key_len=str(len(parts[6])).encode()
+
+                ans=server_config[key]
+                ans_len=str(len(ans)).encode()
+
+                response=f"*2\r\n${key_len}\r\n{key}\r\n{ans_len}\r\n{ans}".encode()
+                writer.write(response)
+                await writer.drain()
+
 
         
 
-async def handle_client(reader,writer,role,replicas,master_state):
+async def handle_client(reader,writer,role,replicas,master_state,server_config):
     
     in_transaction=False
     command_queue=[]
@@ -240,7 +253,7 @@ async def handle_client(reader,writer,role,replicas,master_state):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile)
+                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config)
                 in_transaction=False
                 command_queue=[]
 
@@ -258,7 +271,7 @@ async def handle_client(reader,writer,role,replicas,master_state):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile)        
+            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config)        
 
             
 
@@ -679,9 +692,13 @@ async def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",default=6379,type=int)
     parser.add_argument("--replicaof",nargs="+")
+    parser.add_argument("--dir")
+    parser.add_argument("--dbfilename")
 
 
     args=parser.parse_args()
+
+    server_config={"dir":args.dir,"dbfilename":args.dbfilename}
 
     server_port=args.port
 
@@ -691,7 +708,7 @@ async def main():
         role="master"
     
     replicas=[]
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas,master_state),"localhost",server_port)
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas,master_state,server_config),"localhost",server_port)
 
 
 
