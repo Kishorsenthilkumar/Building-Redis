@@ -8,6 +8,8 @@ master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 async def background_conn(master_reader,master_writer,database):
 
+    offset=0
+
     while True:
 
         data=await master_reader.read(1024)
@@ -32,9 +34,11 @@ async def background_conn(master_reader,master_writer,database):
                 database[key]={"value":value,"expiry_time":None}
 
             if len(part) > 4 and part[2].upper() == b"REPLCONF" and part[4].upper() == b"GETACK":
-                ack_response = b"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n"
+                ack_response = f"*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n{len(offset)}\r\n".encode()
                 master_writer.write(ack_response)
                 await master_writer.drain()
+
+            offset+=len(clean_command)
 
         
             
