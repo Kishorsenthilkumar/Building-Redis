@@ -46,7 +46,7 @@ async def background_conn(master_reader,master_writer,database):
             
 
 
-async def process_command(parts,writer,database,role,replicas):
+async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile):
 
       command=parts[2].lower()
       if command==b"set":
@@ -68,6 +68,7 @@ async def process_command(parts,writer,database,role,replicas):
                     replica_writer.write(propagate_command)
                     await replica_writer.drain()
 
+                master_state["offset"] += len(propagate_command)
 
       if command==b"incr":
             key=parts[4]
@@ -129,9 +130,15 @@ async def process_command(parts,writer,database,role,replicas):
       await writer.drain()
 
 
-      if command==b"replconf":
+      if command==b"replconf" and parts[4].lower()==b"ack":
+        my_replica_profile["offset"]=int(parts[6])
+        
+      
+      elif command==b"replconf" and parts[4].lower()!=b"ack":
         writer.write(b"+OK\r\n")
-      await writer.drain()
+        await writer.drain()
+     
+
 
 
       if command==b"psync":
@@ -142,7 +149,7 @@ async def process_command(parts,writer,database,role,replicas):
         header=f"${str(len(rdb_file))}\r\n".encode()
         response=header+rdb_file
         writer.write(response)
-        replicas.append(writer)
+        replicas.append(my_replica_profile)
 
        
 
@@ -150,20 +157,55 @@ async def process_command(parts,writer,database,role,replicas):
 
 
       if command==b"wait":
-        replica_len=str(len(replicas))
+        no_of_replica=int(parts[4])
+        timeout=int(parts[6])
 
-        response=f":{replica_len}\r\n".encode()
-        writer.write(response)
+        if master_state["offset"]==0:
+            # Fix 1: Properly format the integer length without stringifying the bytes object
+            response = f":{len(replicas)}\r\n".encode()
+            writer.write(response)
+            await writer.drain()
+            return
 
-        await writer.drain()
-      
+        else:
+            for replica_profile in replicas:
+                rep_writer=replica_profile["writer"]
+                rep_writer.write(b"*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n")
+                await rep_writer.drain()
+
+            start_time=time.time()
+            while True:
+                count=0
+
+                for replica_profile in replicas:
+                   # Ensure offset comparison is integer-based
+                   if int(replica_profile["offset"]) >= master_state["offset"]:
+                      count += 1
+                
+                
+                if count >= no_of_replica:
+                    break
+                
+                if timeout > 0 and (time.time() - start_time) * 1000 >= timeout:
+                    break
+                
+               
+                await asyncio.sleep(0.05)
+
+           
+            response=f":{count}\r\n".encode()
+            writer.write(response)
+            await writer.drain()
+
 
         
 
-async def handle_client(reader,writer,role,replicas):
+async def handle_client(reader,writer,role,replicas,master_state):
     
     in_transaction=False
     command_queue=[]
+
+    my_replica_profile={"writer":writer,"offset":0}
 
     while True:
 
@@ -197,7 +239,7 @@ async def handle_client(reader,writer,role,replicas):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database,role,replicas)
+                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile)
                 in_transaction=False
                 command_queue=[]
 
@@ -215,7 +257,7 @@ async def handle_client(reader,writer,role,replicas):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database,role,replicas)        
+            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile)        
 
             
 
@@ -613,6 +655,9 @@ async def handle_client(reader,writer,role,replicas):
                     writer.write(b"+string\r\n")
             await writer.drain()
 
+        
+
+
 
 
 
@@ -628,7 +673,7 @@ async def handle_client(reader,writer,role,replicas):
 
 async def main():
 
-    
+    master_state={"offset":0}
     
     parser=argparse.ArgumentParser()
     parser.add_argument("--port",default=6379,type=int)
@@ -645,7 +690,7 @@ async def main():
         role="master"
     
     replicas=[]
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas),"localhost",server_port)
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas,master_state),"localhost",server_port)
 
 
 
