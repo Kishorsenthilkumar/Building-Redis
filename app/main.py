@@ -207,7 +207,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
              ans=server_config[key]
              ans_len=str(len(ans)).encode()
 
-             response=f"*2\r\n${key_len}\r\n{key}\r\n{ans_len}\r\n{ans}".encode()
+             response=f"*2\r\n${key_len}\r\n{key}\r\n${ans_len}\r\n{ans}\r\n".encode()
              writer.write(response)
              await writer.drain()
 
