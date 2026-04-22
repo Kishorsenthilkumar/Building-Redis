@@ -56,7 +56,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
       if len(client_subs) > 0 and command not in vip:
 
         vipcommand=command.decode()    
-        response=f"-ERR can't execute {(vipcommand)}\r\n".encode()
+        response=f"-ERR can't execute '{(vipcommand)}'\r\n".encode()
         writer.write(response)
         await writer.drain()
 
