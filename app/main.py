@@ -280,7 +280,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             await writer.drain()
 
 
-        if command==b"subscribe":
+      if command==b"subscribe":
 
             key=parts[4]
             key_len=len(key)
