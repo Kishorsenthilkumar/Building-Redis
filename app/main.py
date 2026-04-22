@@ -246,21 +246,15 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         else:
             dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
-            if not os.path.exists(dir_path):
+            my_keys=dbfile_manager(dir_path)
 
-                response=b"*0\r\n"
-                writer.write(response)
-                await writer.drain()
-            else:
-                my_keys=dbfile_manager(dir_path)
+            response = f"*{len(my_keys)}\r\n".encode()
 
-                response = f"*{len(my_keys)}\r\n".encode()
-
-                for k in my_keys.keys():
+            for k in my_keys.keys():
                     response += b"$" + str(len(k)).encode() + b"\r\n" + k + b"\r\n"
 
-                writer.write(response)
-                await writer.drain()
+            writer.write(response)
+            await writer.drain()
 
 #helper for rdbfile key retrival
 def read_length(rdbfile):
