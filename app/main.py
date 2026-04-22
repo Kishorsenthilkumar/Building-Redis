@@ -279,6 +279,20 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(response)
             await writer.drain()
 
+
+        if command==b"subscribe":
+
+            key=parts[4]
+            key_len=len(key)
+
+            response=b"*3\r\n$9\r\nsubscribe\r\n$"+str(key_len).encode()+b"\r\n"+key+b"\r\n:1\r\n"
+            writer.write(response)
+            await writer.drain()
+
+
+
+    
+
 #helper for rdbfile key retrival
 def read_length(rdbfile):
 
