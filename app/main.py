@@ -51,16 +51,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
       
       command=parts[2].lower()
-      vip=[b"subscribe",b"unsubscribe",b"psubscribe",b"punsubscribe",b"ping",b"quit"]
-
-      if len(client_subs) > 0 and command not in vip:
-
-        vipcommand=command.decode()    
-        response=f"-ERR can't execute '{(vipcommand)}'\r\n".encode()
-        writer.write(response)
-        await writer.drain()
-
-        return
+      
 
 
       if command==b"set":
@@ -425,6 +416,16 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
         parts=data.split(b"\r\n")
         command=parts[2].lower()
         if len(parts)<3:
+            continue
+        vip=[b"subscribe",b"unsubscribe",b"psubscribe",b"punsubscribe",b"ping",b"quit"]
+
+        if len(client_subs) > 0 and command not in vip:
+
+            vipcommand=command.decode()    
+            response=f"-ERR can't execute '{(vipcommand)}'\r\n".encode()
+            writer.write(response)
+            await writer.drain()
+
             continue
 
         if in_transaction and command not in [b"exec",b"multi",b"discard"]:
