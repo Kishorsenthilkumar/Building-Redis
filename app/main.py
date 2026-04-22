@@ -118,7 +118,22 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                     rbd_data=dbfile_manager(dir_path)
 
                     if key in rbd_data:
-                        value=rbd_data[key]
+                        entry=rbd_data[key]
+
+                        value=entry["value"]
+                        expiry=entry["expiry"]
+
+                        if expiry is not None:
+                            # Get current time in milliseconds
+                            current_time = int(time.time() * 1000)
+                            
+                            if current_time > expiry:
+                                # The key has expired! Send Null Bulk String.
+                                writer.write(b"$-1\r\n")
+                                await writer.drain()
+                                return
+
+
                         val_len=len(value)
 
                         response = b"$" + str(val_len).encode() + b"\r\n" + value + b"\r\n"
@@ -321,10 +336,30 @@ def  dbfile_manager(dir_path):
                 expiry_size = read_length(file)
 
                 for _ in range(hash_table_size):
-                    value_type = file.read(1)
-                    key = read_string(file)
-                    value = read_string(file)
-                    rdb_data[key]=value
+                   first_byte = file.read(1)
+
+                   if first_byte == b"":
+                        break
+                   expiry_time = None
+
+                   if first_byte[0] == 252:
+                        expiry_bytes = file.read(8)
+                        expiry_time = int.from_bytes(expiry_bytes, "little")
+                        
+                        # We still need to read 1 more byte to clear the value type flag!
+                        value_type = file.read(1)
+                    
+                   elif first_byte[0] == 253:
+                        expiry_bytes = file.read(4)
+                        expiry_time = int.from_bytes(expiry_bytes, "little") * 1000
+                        value_type = file.read(1)
+
+                   else:
+                        value_type = first_byte
+                   key = read_string(file)
+                   value = read_string(file)
+                    
+                   rdb_data[key] = {"value": value, "expiry": expiry_time}
                     
 
                 break
