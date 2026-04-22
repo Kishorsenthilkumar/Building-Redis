@@ -475,9 +475,9 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
                   response=b"*2\r\n$4\r\npong\r\n$0\r\n\r\n"
                   writer.write(response)
                   await writer.drain()
-               
-            writer.write(b"+PONG\r\n")
-            await writer.drain()
+            else: 
+               writer.write(b"+PONG\r\n")
+               await writer.drain()
 
         if command==b"rpush":
             keys=parts[4]
