@@ -103,6 +103,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             key=parts[4]
             value=database.get(key,[])
             entry=database.get(key)
+            dir_path=""
 
             if not entry:
 
@@ -110,7 +111,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                     writer.write(b"$-1\r\n")
                     await writer.drain()
                 else:
-                  dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
+                   dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
                 if os.path.exists(dir_path):
                     rbd_data=dbfile_manager(dir_path)
