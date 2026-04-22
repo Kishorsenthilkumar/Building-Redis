@@ -47,7 +47,7 @@ async def background_conn(master_reader,master_writer,database):
             
 
 
-async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config):
+async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs):
 
       command=parts[2].lower()
       if command==b"set":
@@ -282,14 +282,21 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
       if command==b"subscribe":
 
-            key=parts[4]
-            key_len=len(key)
+            for i in range(4,len(parts)-1,2):
 
-            response=b"*3\r\n$9\r\nsubscribe\r\n$"+str(key_len).encode()+b"\r\n"+key+b"\r\n:1\r\n"
-            writer.write(response)
-            await writer.drain()
+                key=parts[i]
+                key_len=len(key)
 
+                channel_name=parts[i]
+                client_subs.add(channel_name)
+                sub_len=len(client_subs)
 
+                response=b"*3\r\n$9\r\nsubscribe\r\n$"+str(key_len).encode()+b"\r\n"+key+b"\r\n:"+str(sub_len).encode()+b"\r\n"
+                writer.write(response)
+                await writer.drain()
+
+            
+            
 
     
 
@@ -392,6 +399,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
     command_queue=[]
 
     my_replica_profile={"writer":writer,"offset":0}
+    client_subs=set()
 
     while True:
 
@@ -425,7 +433,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config)
+                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs)
                 in_transaction=False
                 command_queue=[]
 
@@ -443,7 +451,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config)        
+            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs)        
 
             
 
