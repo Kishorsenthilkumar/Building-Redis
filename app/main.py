@@ -105,7 +105,23 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             entry=database.get(key)
 
             if not entry:
-                writer.write(b"$-1\r\n")
+                dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
+
+                if os.path.exists(dir_path):
+                    rbd_data=dbfile_manager(dir_path)
+
+                    if key in rbd_data:
+                        value=rbd_data[key]
+                        val_len=len(value)
+
+                        response = b"$" + str(val_len).encode() + b"\r\n" + value + b"\r\n"
+                        writer.write(response)
+                        await writer.drain()
+                else:
+                     response=b"$-1\r\n"
+                     writer.write(response)
+                     await writer.drain()
+
 
             else:
                 now = time.time()
@@ -231,7 +247,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
                 response = f"*{len(my_keys)}\r\n".encode()
 
-                for k in my_keys:
+                for k in my_keys.keys():
                     response += b"$" + str(len(k)).encode() + b"\r\n" + k + b"\r\n"
 
                 writer.write(response)
@@ -280,7 +296,7 @@ def  dbfile_manager(dir_path):
     with open(dir_path,"rb") as file:
 
         head=file.read(9)
-        keys=[]
+        rdb_data={}
 
         while True:
 
@@ -296,12 +312,13 @@ def  dbfile_manager(dir_path):
                 for _ in range(hash_table_size):
                     value_type = file.read(1)
                     key = read_string(file)
-                    keys.append(key)
                     value = read_string(file)
+                    rdb_data[key]=value
+                    
 
                 break
         
-    return keys
+    return rdb_data
 
 
         
