@@ -49,7 +49,20 @@ async def background_conn(master_reader,master_writer,database):
 
 async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs):
 
+      
       command=parts[2].lower()
+      vip=[b"subscribe",b"unsubscribe",b"psubscribe",b"punsubscribe",b"ping",b"quit"]
+
+      if len(client_subs) > 0 and command not in vip:
+
+        vipcommand=command.decode()    
+        response=f"-ERR Can't execute {vipcommand}\r\n".encode()
+        writer.write(response)
+        await writer.drain()
+
+        return
+
+
       if command==b"set":
                 key=parts[4]
                 value=parts[6]
