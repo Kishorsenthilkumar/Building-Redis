@@ -105,7 +105,12 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             entry=database.get(key)
 
             if not entry:
-                dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
+
+                if server_config["dir"] is None or server_config["dbfilename"] is None:
+                    writer.write(b"$-1\r\n")
+                    await writer.drain()
+                else:
+                  dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
                 if os.path.exists(dir_path):
                     rbd_data=dbfile_manager(dir_path)
@@ -235,6 +240,10 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
        
       if command==b"keys" and parts[4]==b"*":
 
+        if server_config["dir"] is None or server_config["dbfilename"] is None:
+                writer.write(b"*0\r\n")
+                await writer.drain()
+        else:
             dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
             if not os.path.exists(dir_path):
