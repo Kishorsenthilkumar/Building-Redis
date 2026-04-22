@@ -110,6 +110,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 if server_config["dir"] is None or server_config["dbfilename"] is None:
                     writer.write(b"$-1\r\n")
                     await writer.drain()
+                    return
                 else:
                    dir_path=os.path.join(server_config["dir"],server_config["dbfilename"])
 
@@ -123,10 +124,16 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                         response = b"$" + str(val_len).encode() + b"\r\n" + value + b"\r\n"
                         writer.write(response)
                         await writer.drain()
+
+                    else:
+                        response=b"$-1\r\n"
+                        writer.write(response)
+                        await writer.drain()
                 else:
                      response=b"$-1\r\n"
                      writer.write(response)
                      await writer.drain()
+                return
 
 
             else:
