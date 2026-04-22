@@ -470,7 +470,14 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
             
 
         if command==b"ping":
+
+            if client_subs>0:
+                  response=b"*2\r\n$4\r\npong\r\n$0\r\n\r\n"
+                  writer.write(response)
+                  await writer.drain()
+               
             writer.write(b"+PONG\r\n")
+            await writer.drain()
 
         if command==b"rpush":
             keys=parts[4]
