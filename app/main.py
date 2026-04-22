@@ -4,6 +4,7 @@ import time
 import argparse
 import os
 database={}
+global_channels={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 
@@ -47,7 +48,7 @@ async def background_conn(master_reader,master_writer,database):
             
 
 
-async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs):
+async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels):
 
       
       command=parts[2].lower()
@@ -293,11 +294,30 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
                 channel_name=parts[i]
                 client_subs.add(channel_name)
+
+                if  key not in global_channels:
+                    global_channels[key]=[]
+                    global_channels[key].append(writer)
+
                 sub_len=len(client_subs)
 
                 response=b"*3\r\n$9\r\nsubscribe\r\n$"+str(key_len).encode()+b"\r\n"+key+b"\r\n:"+str(sub_len).encode()+b"\r\n"
                 writer.write(response)
                 await writer.drain()
+     
+      if command==b"publish":
+
+        channel_name=parts[4]
+        if channel_name in global_channels:
+            no_sub=len(global_channels[channel_name])
+        else:
+            no_sub=0
+        
+        response=b":"+str(no_sub).encode()+b"\r\n"
+        writer.write(response)
+        await writer.drain()
+
+
 
             
             
@@ -397,7 +417,7 @@ def  dbfile_manager(dir_path):
 
         
 
-async def handle_client(reader,writer,role,replicas,master_state,server_config):
+async def handle_client(reader,writer,role,replicas,master_state,server_config,global_channels):
     
     in_transaction=False
     command_queue=[]
@@ -447,7 +467,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
                 
 
                 for comm in command_queue:
-                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs)
+                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels)
                 in_transaction=False
                 command_queue=[]
 
@@ -465,7 +485,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config):
               await writer.drain()
 
         else:
-            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs)        
+            await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels)        
 
             
 
@@ -909,7 +929,7 @@ async def main():
         role="master"
     
     replicas=[]
-    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas,master_state,server_config),"localhost",server_port)
+    server = await asyncio.start_server(lambda r,w:handle_client(r,w,role,replicas,master_state,server_config,global_channels),"localhost",server_port)
 
 
 
