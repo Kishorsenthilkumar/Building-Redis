@@ -297,6 +297,8 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
                 if  key not in global_channels:
                     global_channels[key]=[]
+                    
+                if writer not in global_channels[key]:
                     global_channels[key].append(writer)
 
                 sub_len=len(client_subs)
