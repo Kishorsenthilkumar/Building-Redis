@@ -312,12 +312,12 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         channel_name=parts[4]
         message_content=parts[6]
 
-        if channel_name in global_channels[channel_name]:
+        if channel_name in global_channels:
             no_sub=len(global_channels[channel_name])
             channel_len=len(channel_name)
             msg_len=len(message_content)
 
-            for listener_conn in global_channels:
+            for listener_conn in global_channels[channel_name]:
                 content = b"*3\r\n$7\r\nmessage\r\n$" + str(channel_len).encode() + b"\r\n" + channel_name + b"\r\n$" + str(msg_len).encode() + b"\r\n" + message_content + b"\r\n"
                 listener_conn.write(content)
                 await listener_conn.drain()
