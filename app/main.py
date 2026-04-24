@@ -370,7 +370,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
 
               database[key].sort()
-              response=b":"+{added_count}+b"\r\n".encode()
+              response=b":"+str(added_count)+b"\r\n".encode()
               writer.write(response)
               await writer.drain()
 
