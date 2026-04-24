@@ -330,6 +330,28 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
           await writer.drain()
 
 
+      if command==b"unsubscribe":
+
+        for i in range(4,len(parts)-1,2):
+            channel_name=parts[i]
+            channel_len=len(channel_name)
+
+            if channel_name in client_subs:
+                client_subs.remove(channel_name)
+                
+
+            if channel_name in global_channels and writer in global_channels[channel_name]:
+                    global_channels[channel_name].remove(writer)
+
+            sub_len=len(client_subs)
+            response=b"*3\r\n$11\r\nunsubscribe\r\n$"+str(channel_len).encode()+b"\r\n"+channel_name+b"\r\n:"+str(sub_len).encode()+b"\r\n"
+            writer.writer(response)
+            await writer.drain()
+            
+           
+
+
+
 
             
             
