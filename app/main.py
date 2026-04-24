@@ -348,7 +348,24 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(response)
             await writer.drain()
             
-           
+      if command==b"zadd":
+
+              key=parts[4]
+              scores=parts[6].decode()
+              member=parts[8]
+
+              if key not in database:
+                database[key]=[]
+              
+              score=float(scores)
+              database[key].append((score,member))
+              
+              response=b":1\r\n"
+              writer.write(response)
+              await writer.drain()
+
+
+
 
 
 
