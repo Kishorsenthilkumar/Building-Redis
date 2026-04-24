@@ -345,7 +345,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
             sub_len=len(client_subs)
             response=b"*3\r\n$11\r\nunsubscribe\r\n$"+str(channel_len).encode()+b"\r\n"+channel_name+b"\r\n:"+str(sub_len).encode()+b"\r\n"
-            writer.writer(response)
+            writer.write(response)
             await writer.drain()
             
            
