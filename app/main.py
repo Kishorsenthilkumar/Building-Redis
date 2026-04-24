@@ -358,9 +358,19 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 database[key]=[]
               
               score=float(scores)
-              database[key].append((score,member))
-              
-              response=b":1\r\n"
+              added_count=1
+
+              for i,data in enumerate(database[key]):
+                if member == data[1]:
+                    database[key][i]=(score,member)
+                    added_count=0
+                    break
+              if added_count==1:
+                 data.append((score,member))
+
+
+              database[key].sort()
+              response=b":"+{added_count}+b"\r\n".encode()
               writer.write(response)
               await writer.drain()
 
