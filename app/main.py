@@ -366,7 +366,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                     added_count=0
                     break
               if added_count==1:
-                 data.append((score,member))
+                 database[key].append((score,member))
 
 
               database[key].sort()
