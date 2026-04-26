@@ -430,6 +430,15 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         await writer.drain()
 
 
+      if command==b"zcard":
+
+        key=parts[4]
+        count=len(database[key])
+        response=b":"+{count}+b"\r\n"
+        writer.write(response)
+        await writer.drain()
+
+
         
 
         
