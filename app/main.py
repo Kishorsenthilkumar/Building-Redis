@@ -435,8 +435,11 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         key=parts[4]
 
         if key not in database:
+            response=b":0\r\n"
+            writer.write(response)
+            await writer.drain()
             return
-            
+
         count=len(database[key])
         response=b":"+str(count).encode()+b"\r\n"
         writer.write(response)
