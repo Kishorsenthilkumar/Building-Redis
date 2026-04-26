@@ -596,20 +596,22 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             return
 
         else:
-            lon, lat = decode_geohash(score)
-            lon_str = str(lon)
-            lat_str = str(lat)
-
-            lon_bytes = lon_str.encode()
-            lat_bytes = lat_str.encode()
-
             for mem in members:
                 found=False
                 for index,data in enumerate(database[key]):
+
                     if mem==data[1]:
                         found=True
                         score=int(data[0])
+
+                        lon, lat = decode_geohash(score)
+                        lon_str = str(lon)
+                        lat_str = str(lat)
+
+                        lon_bytes = lon_str.encode()
+                        lat_bytes = lat_str.encode()
                         break
+                    
                 if found==True:
                     response+=b"*2\r\n"
                     response += b"$" + str(len(lon_bytes)).encode() + b"\r\n" + lon_bytes + b"\r\n"
