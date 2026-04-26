@@ -675,7 +675,68 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         writer.write(response)
         await writer.drain()
 
+
+      if command==b"geosearch":
+
+        key=parts[4]
+        long=parts[8].decode()
+        lat=parts[10].decode()
+        rad=parts[14].decode()
+        uni=parts[16].decode()
+
+        cen_long=float(long)
+        cen_lat=float(lat)
+        radius=float(rad)
+        unit=uni.lower()
+
+        radius_meters = 0.0
+
+        if unit == "m":
+          radius_meters = radius 
+        elif unit == "km":
+            radius_meters = radius * 1000.0 
+        elif unit == "mi":
+            radius_meters = radius * 1609.34 
+        elif unit == "ft":
+            radius_meters = radius * 0.3048
+
+        if key not in database:
+            response=b"*0\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+
+        matching_members=[]
+        for data in database[key]:
+
+            score=int(data[0])
+            long,lat=decode_geohash(score)
+
+            distance=calculate_distance(long,lat,cen_long,cen_lat)
+
+            if distance<=radius_meters:
+                matching_members.append(data[1])
+
+        response=b"*"+str(len(matching_members)).encode()+b"\r\n"
+
+        for member in matching_members:
+
+            response+=b"$"+str(len(member)).encode()+b"\r\n"+member+b"\r\n"
+        writer.write(response)
+        await writer.drain()
+
+
+
+            
+
+
         
+
+
+
+
+
+
 
 
         
