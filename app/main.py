@@ -433,6 +433,10 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
       if command==b"zcard":
 
         key=parts[4]
+
+        if key not in database:
+            return
+            
         count=len(database[key])
         response=b":"+str(count).encode()+b"\r\n"
         writer.write(response)
