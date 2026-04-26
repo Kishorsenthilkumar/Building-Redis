@@ -403,7 +403,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         start=int(parts[6])
         stop=int(parts[8])
 
-        if key not in database or start>=len(database[key]) or start>stop:
+        if key not in database:
             response=b"*0\r\n"
             writer.write(response)
             await writer.drain()
