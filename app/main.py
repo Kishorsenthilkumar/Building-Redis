@@ -496,13 +496,18 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
       if command==b"geoadd":
 
         key=parts[4]
-        longitude=parts[6]
-        latitude=parts[8]
+        longitude=float(parts[6]).decode()
+        latitude=float(parts[8]).decode()
         member=parts[10]
 
-        
+        if longitude<-180.0 or longitude>180.0:
+            if latitude<-85.05112878 or latitude>85.05112878:
+                response=b":1\r\n"
+                writer.write(response)
+                await writer.drain()
+                return
 
-        response=b":1\r\n"
+        response=b"-ERR invalid longitude,latitude pair\r\n"
         writer.write(response)
         await writer.drain()
 
