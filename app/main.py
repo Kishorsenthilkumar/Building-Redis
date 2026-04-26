@@ -496,9 +496,13 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
       if command==b"geoadd":
 
         key=parts[4]
-        longitude=float(parts[6]).decode()
-        latitude=float(parts[8]).decode()
+        lon=parts[6].decode()
+        lat=parts[8].decode()
         member=parts[10]
+
+        longitude=float(lon)
+        latitude=float(lat)
+        
 
         if longitude<-180.0 or longitude>180.0:
             if latitude<-85.05112878 or latitude>85.05112878:
