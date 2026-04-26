@@ -445,6 +445,28 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         writer.write(response)
         await writer.drain()
 
+      if command==b"zscore":
+
+        key=parts[4]
+        member=parts[6]
+
+        if key not in database or member not in database[key]:
+            response=b"$-1\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+
+        for index,data in enumerate(database[key]):
+
+            if member==data[1]:
+                score=data[0]
+                response=b"$"+str(len(score)).encode()+b"\r\n"+score+b"\r\n"
+                writer.write(response)
+                await writer.drain()
+
+
+        
+
 
         
 
