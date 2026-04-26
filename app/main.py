@@ -489,7 +489,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 await writer.drain()
                 return
         
-        response=b"$0\r\n"
+        response=b":0\r\n"
         writer.write(response)
         await writer.drain()
         
