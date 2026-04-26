@@ -504,14 +504,13 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         latitude=float(lat)
         
 
-        if longitude<-180.0 or longitude>180.0:
-            if latitude<-85.05112878 or latitude>85.05112878:
-                response=b":1\r\n"
+        if longitude<-180.0 or longitude>180.0 or latitude<-85.05112878 or latitude>85.05112878:
+                response=b"-ERR invalid longitude,latitude pair\r\n"
                 writer.write(response)
                 await writer.drain()
                 return
 
-        response=b"-ERR invalid longitude,latitude pair\r\n"
+        response=b":1\r\n"
         writer.write(response)
         await writer.drain()
 
