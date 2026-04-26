@@ -492,6 +492,26 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         response=b":0\r\n"
         writer.write(response)
         await writer.drain()
+
+      if command==b"geoadd":
+
+        key=parts[4]
+        longitude=parts[6]
+        latitude=parts[8]
+        member=parts[10]
+
+        if key not in database:
+            response=b"$-1\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+
+        response=b":1\r\n"
+        writer.write(response)
+        await writer.drain()
+
+
+
         
 
 
