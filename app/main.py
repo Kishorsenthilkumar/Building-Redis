@@ -510,16 +510,25 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 await writer.drain()
                 return
 
-        response=b":1\r\n"
+        
+        if key not in database:
+            database[key]=[]
+              
+        score=0.0
+        added_count=1
+
+        for i,data in enumerate(database[key]):
+             if member == data[1]:
+                    database[key][i]=(score,member)
+                    added_count=0
+                    break
+        if added_count==1:
+            database[key].append((score,member))
+
+        database[key].sort()
+        response = b":" + str(added_count).encode() + b"\r\n"
         writer.write(response)
         await writer.drain()
-
-
-
-        
-
-
-        
 
 
         
