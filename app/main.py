@@ -434,7 +434,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
         key=parts[4]
         count=len(database[key])
-        response=b":"+{count}+b"\r\n"
+        response=b":"+str(count).encode()+b"\r\n"
         writer.write(response)
         await writer.drain()
 
