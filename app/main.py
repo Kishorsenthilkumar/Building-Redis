@@ -459,9 +459,8 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         for index,data in enumerate(database[key]):
 
             if member==data[1]:
-                score=data[0]
-                len_score=str(score).encode()
-                response=b"$"+str(len(len_score)).encode()+b"\r\n"+score+b"\r\n"
+                score=str(data[0]).encode()
+                response=b"$"+str(len(score)).encode()+b"\r\n"+score+b"\r\n"
                 writer.write(response)
                 await writer.drain()
 
