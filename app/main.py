@@ -450,7 +450,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         key=parts[4]
         member=parts[6]
 
-        if key not in database or member not in database[key]:
+        if key not in database:
             response=b"$-1\r\n"
             writer.write(response)
             await writer.drain()
@@ -460,9 +460,14 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
             if member==data[1]:
                 score=data[0]
-                response=b"$"+str(len(score)).encode()+b"\r\n"+score+b"\r\n"
+                len_score=str(score).encode()
+                response=b"$"+str(len(len_score)).encode()+b"\r\n"+score+b"\r\n"
                 writer.write(response)
                 await writer.drain()
+
+        response=b"$-1\r\n"
+        writer.write(response)
+        await writer.drain()
 
 
         
