@@ -1,5 +1,6 @@
 import socket  
 import asyncio
+from tarfile import data_filter
 import time
 import argparse
 import os
@@ -469,30 +470,35 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         writer.write(response)
         await writer.drain()
 
+      if command==b"zrem":
 
+        key=parts[4]
+        member=parts[6]
+
+        if key not in database:
+            response=b"$-1\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+
+        for index,data in enumerate(database[key]):
+            if member==data[1]:
+                database[key].pop(index)
+                response=b":1\r\n"
+                writer.write(response)
+                await writer.drain()
+                return
+        
+        response=b"$0\r\n"
+        writer.write(response)
+        await writer.drain()
         
 
 
         
 
+
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-            
-
-    
 
 #helper for rdbfile key retrival
 def read_length(rdbfile):
