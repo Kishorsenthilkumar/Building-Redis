@@ -4,6 +4,7 @@ from tarfile import data_filter
 import time
 import argparse
 import os
+import math
 database={}
 global_channels={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
@@ -98,6 +99,21 @@ def decode_geohash(score):
     latitude = (lat_min + lat_max) / 2
     
     return longitude, latitude
+
+def calculate_distance(lon1, lat1, lon2, lat2):
+    # Earth's radius exactly as Redis defines it
+    R = 6372797.560856 
+    
+    # Convert all coordinates from degrees to radians
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+    
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    
+    return R * c
    
 
 
@@ -611,7 +627,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                         lon_bytes = lon_str.encode()
                         lat_bytes = lat_str.encode()
                         break
-                    
+
                 if found==True:
                     response+=b"*2\r\n"
                     response += b"$" + str(len(lon_bytes)).encode() + b"\r\n" + lon_bytes + b"\r\n"
@@ -620,7 +636,44 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                     response+=b"*-1\r\n"
             writer.write(response)
             await writer.drain()
-            
+
+     
+      if command==b"geodist":
+
+        key=parts[4]
+        member1 = parts[6]
+        member2 = parts[8]
+
+        if key not in database:
+                writer.write(b"$-1\r\n")
+                await writer.drain()
+                return
+
+        score1 = None
+        score2 = None
+
+        for data in database[key]:
+                if data[1] == member1:
+                    score1 = int(data[0])
+                if data[1] == member2:
+                    score2 = int(data[0])
+
+                if score1 is not None and score2 is not None:
+                    break
+
+        if score1 is None or score2 is None:
+                writer.write(b"$-1\r\n")
+                await writer.drain()
+                return
+        lon1, lat1 = decode_geohash(score1)
+        lon2, lat2 = decode_geohash(score2)
+
+        distance = calculate_distance(lon1, lat1, lon2, lat2)
+        dist_str = f"{distance:.4f}".encode()
+
+        response = b"$" + str(len(dist_str)).encode() + b"\r\n" + dist_str + b"\r\n"
+        writer.write(response)
+        await writer.drain()
 
         
 
