@@ -395,6 +395,39 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         response = b"$-1\r\n"
         writer.write(response)
         await writer.drain()
+   
+
+      if command==b"zrange":
+
+        key=parts[4]
+        start=int(parts[6])
+        stop=int(parts[8])
+
+        if key not in database or start>=len(database[key]) or start>stop:
+            response=b"*0\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+
+        member_list=database[key][start:stop+1]
+        response=b"*"+str(len(member_list)).encode()+b"\r\n"
+
+        for score_mem in member_list:
+            member=score_mem[1]
+            response+=b"$"+str(len(member)).encode()+b"\r\n"+member+b"\r\n"
+        writer.write(response)
+        await writer.drain()
+
+
+        
+
+        
+
+
+
+
+
+
 
 
 
