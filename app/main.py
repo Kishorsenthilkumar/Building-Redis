@@ -555,6 +555,33 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         writer.write(response)
         await writer.drain()
 
+      if command==b"geopos":
+
+        key=parts[4]
+        members=[parts[i] for i in range(6,len(parts)-1,2)]
+        response=b"*"+str(len(members)).encode()+b"\r\n"
+
+        if key not in database:
+            writer.write(b"*-1\r\n")
+            await writer.drain()
+            return
+        else:
+            for mem in members:
+                found=False
+                for index,data in enumerate(database[key]):
+                    if mem==data[1]:
+                        found=True
+                        break
+                if found==True:
+                    response+=b"*2\r\n$1\r\n0\r\n$1\r\n0\r\n"
+                else:
+                    response=b"*-1\r\n"
+            writer.write(response)
+            await writer.drain()
+            
+
+        
+
 
         
 
