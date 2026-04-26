@@ -563,9 +563,11 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
         if key not in database:
             for _ in members:
-              writer.write(b"*-1\r\n")
-              await writer.drain()
-              return
+              response+=b"*-1\r\n"
+            writer.write(response)
+            await writer.drain()
+            return
+            
         else:
             for mem in members:
                 found=False
