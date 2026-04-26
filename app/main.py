@@ -463,6 +463,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 response=b"$"+str(len(score)).encode()+b"\r\n"+score+b"\r\n"
                 writer.write(response)
                 await writer.drain()
+                return
 
         response=b"$-1\r\n"
         writer.write(response)
