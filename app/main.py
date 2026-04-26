@@ -71,6 +71,33 @@ def calculate_geohash(longitude, latitude):
             lat_max = lat_mid
             
     return score
+
+def decode_geohash(score):
+    lat_min, lat_max = -85.05112878, 85.05112878
+    lon_min, lon_max = -180.0, 180.0
+    
+    # Extract bits from 51 down to 0
+    for i in range(51, -1, -1):
+        bit = (score >> i) & 1
+        
+        if i % 2 == 1:  # Odd bits belong to Longitude
+            lon_mid = (lon_min + lon_max) / 2
+            if bit == 1:
+                lon_min = lon_mid
+            else:
+                lon_max = lon_mid
+        else:           # Even bits belong to Latitude
+            lat_mid = (lat_min + lat_max) / 2
+            if bit == 1:
+                lat_min = lat_mid
+            else:
+                lat_max = lat_mid
+                
+    # The final coordinate is the dead center of the remaining bounding box
+    longitude = (lon_min + lon_max) / 2
+    latitude = (lat_min + lat_max) / 2
+    
+    return longitude, latitude
    
 
 
@@ -567,16 +594,26 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(response)
             await writer.drain()
             return
-            
+
         else:
+            lon, lat = decode_geohash(score)
+            lon_str = str(lon)
+            lat_str = str(lat)
+
+            lon_bytes = lon_str.encode()
+            lat_bytes = lat_str.encode()
+
             for mem in members:
                 found=False
                 for index,data in enumerate(database[key]):
                     if mem==data[1]:
                         found=True
+                        score=int(data[0])
                         break
                 if found==True:
-                    response+=b"*2\r\n$1\r\n0\r\n$1\r\n0\r\n"
+                    response+=b"*2\r\n"
+                    response += b"$" + str(len(lon_bytes)).encode() + b"\r\n" + lon_bytes + b"\r\n"
+                    response += b"$" + str(len(lat_bytes)).encode() + b"\r\n" + lat_bytes + b"\r\n"
                 else:
                     response+=b"*-1\r\n"
             writer.write(response)
