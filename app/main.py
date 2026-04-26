@@ -45,8 +45,33 @@ async def background_conn(master_reader,master_writer,database):
 
             offset+=len(clean_command)
 
-        
+
+def calculate_geohash(longitude, latitude):
+    lat_min, lat_max = -85.05112878, 85.05112878
+    lon_min, lon_max = -180.0, 180.0
+    score = 0
+    
+    for _ in range(26):
+        # 1. Longitude bit
+        score <<= 1
+        lon_mid = (lon_min + lon_max) / 2
+        if longitude >= lon_mid:
+            score |= 1
+            lon_min = lon_mid
+        else:
+            lon_max = lon_mid
             
+        # 2. Latitude bit
+        score <<= 1
+        lat_mid = (lat_min + lat_max) / 2
+        if latitude >= lat_mid:
+            score |= 1
+            lat_min = lat_mid
+        else:
+            lat_max = lat_mid
+            
+    return score
+   
 
 
 async def process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels):
@@ -514,7 +539,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         if key not in database:
             database[key]=[]
               
-        score=0.0
+        score=calculate_geohash(longitude, latitude)
         added_count=1
 
         for i,data in enumerate(database[key]):
