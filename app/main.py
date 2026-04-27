@@ -5,8 +5,11 @@ import time
 import argparse
 import os
 import math
+import hashlib
+
 database={}
 global_channels={}
+users={"default":{"password_hash":None}}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 
@@ -737,24 +740,29 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         if parts[4].lower()==b"getuser":
             username=parts[6]
 
-            response=b"*4\r\n"+b"$5\r\nflags\r\n"+b"*1\r\n$6\r\nnopass\r\n"+b"$9\r\npasswords\r\n"+b"*0\r\n"
+            if users["default"]["password_hash"] is None:
+                 response=b"*4\r\n"+b"$5\r\nflags\r\n"+b"*1\r\n$6\r\nnopass\r\n"+b"$9\r\npasswords\r\n"+b"*0\r\n"
+            else:
+                password=users["default"]["password_hash"]
+                response=b"*4\r\n"+b"$5\r\nflags\r\n"+b"*0\r\n"+b"$9\r\npasswords\r\n"+b"*1\r\n$64\r\n"+password.encode()+b"\r\n"
+
+
             writer.write(response)
             await writer.drain()
+
+        if parts[4].lower()==b"setuser":
+
+            password=parts[8][1:]
+            hashed_pass=hashlib.sha256(password).hexdigest()
+            users["default"]["password_hash"]=hashed_pass
+
+            writer.write(b"+OK\r\n")
+            await writer.drain()
+
+
+
+
             
-
-
-
-
-
-            
-
-
-        
-
-
-
-
-
 
 
 
