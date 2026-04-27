@@ -880,7 +880,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
     my_replica_profile={"writer":writer,"offset":0}
     client_subs=set()
 
-    if users["default"]["passoword_hash"] is None:
+    if users["default"]["password_hash"] is None:
         is_authenticated=True
     else:
         is_authenticated=False
