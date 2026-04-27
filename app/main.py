@@ -727,6 +727,16 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
 
 
+      if command==b"acl":
+
+        if parts[4].lower()==b"whoami":
+            response=b"$7\r\ndefault\r\n"
+            writer.write(response)
+            await writer.drain()
+
+
+
+
             
 
 
