@@ -900,7 +900,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
             response=b"-NOAUTH Authentication required.\r\n"
             writer.write(response)
             await writer.drain()
-            continue
+            
 
 
         if len(parts)<3:
