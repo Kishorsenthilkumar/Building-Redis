@@ -758,15 +758,26 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
             writer.write(b"+OK\r\n")
             await writer.drain()
+ 
+      if command==b"auth":
 
+        username=parts[4].decode()
+        password=parts[6]
+        hashed_pass=hashlib.sha256(password).hexdigest()
 
-
-
-            
-
-
-
+        if username not in users or hashed_pass is None or hashed_pass!=users[username]["password_hash"]:
+            response=b"-WRONGPASS invalid username-password pair or user is disabled.\r\n"
+        else:
+            response=b"+OK\r\n"
         
+        writer.write(response)
+        await writer.drain()
+
+
+
+
+
+    
 
 #helper for rdbfile key retrival
 def read_length(rdbfile):
