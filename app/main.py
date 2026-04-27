@@ -758,20 +758,6 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
             writer.write(b"+OK\r\n")
             await writer.drain()
-
-      if command==b"watch":
-        
-            response=b"+OK\r\n"
-            writer.write(response)
-            await writer.drain()
-
- 
-      
-
-
-
-
-
     
 
 #helper for rdbfile key retrival
@@ -871,6 +857,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
     
     in_transaction=False
     command_queue=[]
+    watched_keys=set()
 
     my_replica_profile={"writer":writer,"offset":0}
     client_subs=set()
@@ -879,6 +866,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
         is_authenticated=True
     else:
         is_authenticated=False
+ 
 
     while True:
 
@@ -896,6 +884,19 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
             writer.write(response)
             await writer.drain()
             continue
+
+        if in_transaction and command not in [b"exec", b"multi", b"discard"]:
+
+           if command==b"watch":
+              response=b"-ERR WATCH inside MULTI is not allowed\r\n"
+              writer.write(response)
+              await writer.drain()
+              continue
+ 
+           command_queue.append(parts)
+           writer.write(b"+QUEUED\r\n")
+           await writer.drain()
+           continue          
 
         if command==b"auth":
 
@@ -967,7 +968,19 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
         else:
             await process_command(parts,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels)        
 
-            
+
+
+        if command==b"watch":
+            key=parts[4]
+            watched_keys.add(key)
+
+            response=b"+OK\r\n"
+            writer.write(response)
+            await writer.drain()
+
+
+
+
 
         if command==b"ping":
 
