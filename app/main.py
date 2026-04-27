@@ -880,6 +880,11 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
     my_replica_profile={"writer":writer,"offset":0}
     client_subs=set()
 
+    if users["default"]["passoword_hash"] is None:
+        is_authenticated=True
+    else:
+        is_authenticated=False
+
     while True:
 
         data = await reader.read(1024)
@@ -890,6 +895,14 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
         
         parts=data.split(b"\r\n")
         command=parts[2].lower()
+
+        if is_authenticated==False:
+            response=b"-NOAUTH Authentication required.\r\n"
+            writer.write(response)
+            await writer.drain()
+            continue
+
+
         if len(parts)<3:
             continue
         vip=[b"subscribe",b"unsubscribe",b"psubscribe",b"punsubscribe",b"ping",b"quit"]
