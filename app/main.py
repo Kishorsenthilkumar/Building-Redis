@@ -759,8 +759,8 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
             writer.write(b"+OK\r\n")
             await writer.drain()
 
-        if command==b"watch":
-
+      if command==b"watch":
+        
             response=b"+OK\r\n"
             writer.write(response)
             await writer.drain()
