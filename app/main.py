@@ -737,7 +737,7 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
         if parts[4].lower()==b"getuser":
             username=parts[6]
 
-            response=b"*2\r\n"+b"$5\r\nflags\r\n"+b"*1\r\n"+b"$6\r\nnopass\r\n"
+            response=b"*2\r\n"+b"$5\r\nflags\r\n"+b"*1\r\n$6\r\nnopass\r\n"+b"*1\r\n$9\r\npasswords\r\n"+b"*0\r\n"
             writer.write(response)
             await writer.drain()
             
