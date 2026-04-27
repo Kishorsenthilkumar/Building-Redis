@@ -10,6 +10,7 @@ import hashlib
 database={}
 global_channels={}
 users={"default":{"password_hash":None}}
+global_key_versions={}
 master_replid="8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
 
 
@@ -131,6 +132,11 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                 key=parts[4]
                 value=parts[6]
                 expiry_time=None
+
+                if key not in global_key_versions:
+                    global_key_versions[key]=1
+                else:
+                    global_key_versions[key]+=1
                 
 
                 if len(parts)>8 and parts[8].lower()==b"px":
@@ -857,7 +863,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
     
     in_transaction=False
     command_queue=[]
-    watched_keys=set()
+    watched_keys={}
 
     my_replica_profile={"writer":writer,"offset":0}
     client_subs=set()
@@ -944,15 +950,27 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
             if not in_transaction:
                 writer.write(b"-ERR EXEC without MULTI\r\n")
             else:
-                writer.write(f"*{len(command_queue)}\r\n".encode())
                 
+                abort_transaction=False
+                for key,version in watched_keys.items():
 
-                for comm in command_queue:
-                    await process_command(comm,writer,database,role,replicas,master_state,my_replica_profile,server_config,client_subs,global_channels)
-                in_transaction=False
-                command_queue=[]
+                    if version!=global_key_versions[key]:
+                        abort_transaction=True
+                        break
+                    
+                if abort_transaction==True:
+                    writer.write(b"*-1\r\n")
+                else:
+                    writer.write(f"*{len(command_queue)}\r\n".encode())
+                    for comm in command_queue:
+                        await process_command(comm, writer, database, role, replicas, master_state, my_replica_profile, server_config, client_subs, global_channels)
+                in_transaction = False
+                watched_keys.clear()
+                command_queue = []
 
             await writer.drain()
+
+
 
         elif command==b"discard":
               
@@ -972,7 +990,12 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
 
         if command==b"watch":
             key=parts[4]
-            watched_keys.add(key)
+            
+
+            if key not in global_key_versions:
+                global_key_versions[key]=0
+            
+            watched_keys[key]=global_key_versions[key]
 
             response=b"+OK\r\n"
             writer.write(response)
