@@ -1463,6 +1463,14 @@ async def main():
         file_path=os.path.join(path,server_config["appendfilename"])
         file_path=file_path+".1.incr.aof"
 
+        manifest_path=os.path.join(path,server_config["appendfilename"])
+        manifest_path=manifest_path+".manifest"
+
+        manifest_content=f"file {server_config['appendfilename']}.1.incr.aof seq 1 type i\n"
+
+        with open(manifest_path,"w") as f:
+            f.write(manifest_content)
+
         open(file_path,"a").close()
 
 
