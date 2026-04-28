@@ -989,9 +989,10 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
 
 
         if command==b"watch":
-            key=parts[4]
             
-
+            for i in range(4,len(parts)-1,2):
+                key=parts[i]
+            
             if key not in global_key_versions:
                 global_key_versions[key]=0
             
