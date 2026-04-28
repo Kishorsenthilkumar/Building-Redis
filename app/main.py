@@ -1456,8 +1456,14 @@ async def main():
     server_config={"dir":args.dir,"dbfilename":args.dbfilename,"appendonly": args.appendonly,"appenddirname": args.appenddirname,"appendfilename": args.appendfilename,"appendfsync": args.appendfsync}
 
     if server_config["appendonly"]=="yes":
+
         path=os.path.join(server_config["dir"],server_config["appenddirname"])
         os.makedirs(path,exist_ok=True)
+
+        file_path=os.path.join(path,server_config["appendfilename"])
+        file_path=file_path+".1.incr.aof"
+
+        open(file_path,"a").close()
 
 
     server_port=args.port
