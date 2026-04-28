@@ -994,10 +994,10 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
             for i in range(4,len(parts)-1,2):
                 key=parts[i]
             
-            if key not in global_key_versions:
-                global_key_versions[key]=0
+                if key not in global_key_versions:
+                    global_key_versions[key]=0
             
-            watched_keys[key]=global_key_versions[key]
+                watched_keys[key]=global_key_versions[key]
 
             response=b"+OK\r\n"
             writer.write(response)
