@@ -1435,13 +1435,16 @@ def get_active_aof_path(server_config):
     file_path=os.path.join(server_config["dir"],server_config["appenddirname"])
     manifest_path=os.path.join(file_path,server_config["appendfilename"])+".manifest"
 
+    target_aof_filename = None
     with open(manifest_path,"r") as f:
-        manifest_text = f.read().strip()
-        parts = manifest_text.split(" ")
-        target_aof_filename = parts[1]
-
-        full_aof_path = os.path.join(file_path, target_aof_filename)
-        return full_aof_path
+        for line in f:
+            if "type i" in line:
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    target_aof_filename = parts[1]
+                    break
+                    
+    return os.path.join(file_path, target_aof_filename)
 
 
 
@@ -1483,17 +1486,21 @@ async def main():
 
         if os.path.exists(manifest_path):
 
+             target_aof_filename = None
              with open(manifest_path,"r") as f:
-                  manifest_text = f.read().strip()
+                  for line in f:
+                    if "type i" in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 2:
+                            target_aof_filename = parts[1]
+                            break
             
-             if manifest_text:
+             if target_aof_filename:
+                aof_path = os.path.join(base_dir, target_aof_filename)
 
-                manifest_parts = manifest_text.split(" ")
-                if len(manifest_parts) >= 2:
-                    target_aof_filename = manifest_parts[1]
-                    aof_path = os.path.join(base_dir, target_aof_filename)
+               
 
-                    if os.path.exists(aof_path):
+                if os.path.exists(aof_path):
                         with open(aof_path, "rb") as f:
                             file_data = f.read()
 
