@@ -1001,6 +1001,15 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
             writer.write(response)
             await writer.drain()
 
+        
+        if command==b"unwatch":
+
+            if watched_keys is not None:
+                watched_keys.clear()
+            response=b"+OK\r\n"
+            writer.write(response)
+            await writer.drain()
+
 
 
 
