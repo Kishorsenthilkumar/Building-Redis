@@ -1433,9 +1433,9 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
 def get_active_aof_path(server_config):
 
     file_path=os.path.join(server_config["dir"],server_config["appenddirname"])
-    file_path=os.path.join(file_path,server_config["appendfilename"])+".manifest"
+    manifest_path=os.path.join(file_path,server_config["appendfilename"])+".manifest"
 
-    with open(file_path,"r") as f:
+    with open(manifest_path,"r") as f:
         manifest_text = f.read().strip()
         parts = manifest_text.split(" ")
         target_aof_filename = parts[1]
