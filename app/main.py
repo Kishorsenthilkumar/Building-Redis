@@ -1471,23 +1471,16 @@ async def main():
 
     server_config={"dir":args.dir,"dbfilename":args.dbfilename,"appendonly": args.appendonly,"appenddirname": args.appenddirname,"appendfilename": args.appendfilename,"appendfsync": args.appendfsync}
 
-    if server_config["appendonly"]=="yes":
-
-        path=os.path.join(server_config["dir"],server_config["appenddirname"])
-        os.makedirs(path,exist_ok=True)
-
-        file_path=os.path.join(path,server_config["appendfilename"])
-        base_dir=os.path.join(path,server_config["appendfilename"])
-        file_path=file_path+".1.incr.aof"
+    if server_config["appendonly"] == "yes":
+        # 1. Define the base directory and manifest path
+        base_dir = os.path.join(server_config["dir"], server_config["appenddirname"])
+        manifest_path = os.path.join(base_dir, server_config["appendfilename"] + ".manifest")
         
-        #log tracker to make sure server starts from where it left
-        manifest_path=os.path.join(path,server_config["appendfilename"])
-        manifest_path=manifest_path+".manifest"
-
+        # --- THE FORK IN THE ROAD ---
         if os.path.exists(manifest_path):
-
+             # RECOVERY MODE
              target_aof_filename = None
-             with open(manifest_path,"r") as f:
+             with open(manifest_path, "r") as f:
                   for line in f:
                     if "type i" in line:
                         parts = line.strip().split()
@@ -1497,8 +1490,6 @@ async def main():
             
              if target_aof_filename:
                 aof_path = os.path.join(base_dir, target_aof_filename)
-
-               
 
                 if os.path.exists(aof_path):
                         with open(aof_path, "rb") as f:
@@ -1518,35 +1509,22 @@ async def main():
                                     value = parts[6]
                                     expiry_time = None
 
-                                    # Check if the AOF file had an expiry (PX) attached
                                     if len(parts) > 8 and parts[8].lower() == b"px":
                                         ms_to_live = int(parts[10])
                                         expiry_time = time.time() + (ms_to_live / 1000)
                                     database[key] = {"value": value, "expiry_time": expiry_time}
-                    
         else:
-              # 2. FIRST BOOT MODE: Create the empty files
+              # FIRST BOOT MODE: Create the empty files safely
               os.makedirs(base_dir, exist_ok=True)
-            
-                           # Create manifest file
+              
+              # Create manifest file
               manifest_content = f"file {server_config['appendfilename']}.1.incr.aof seq 1 type i\n"
               with open(manifest_path, "w") as f:
                     f.write(manifest_content)
                 
-                           # Create empty .aof file
+              # Create empty .aof file
               initial_aof_path = os.path.join(base_dir, f"{server_config['appendfilename']}.1.incr.aof")
               open(initial_aof_path, "ab").close()
-
-                 
-
-            
-
-        manifest_content=f"file {server_config['appendfilename']}.1.incr.aof seq 1 type i\n"
-
-        with open(manifest_path,"w") as f:
-            f.write(manifest_content)
-
-        open(file_path,"a").close()
 
 
     server_port=args.port
