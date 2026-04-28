@@ -1442,6 +1442,10 @@ async def main():
     parser.add_argument("--replicaof",nargs="+")
     parser.add_argument("--dir")
     parser.add_argument("--dbfilename")
+    parser.add_argument("--appendonly",default="no")
+    parser.add_argument("--appenddirname",default="appendonlydir")
+    parser.add_argument("--appendfilename",default="appendonly.aof")
+    parser.add_argument("--appendfsync",default="everysec")
 
 
     args=parser.parse_args()
@@ -1449,7 +1453,7 @@ async def main():
     if args.dir is None:
         args.dir=os.getcwd()
 
-    server_config={"dir":args.dir,"dbfilename":args.dbfilename,"appendonly": "no","appenddirname": "appendonlydir","appendfilename": "appendonly.aof","appendfsync": "everysec"}
+    server_config={"dir":args.dir,"dbfilename":args.dbfilename,"appendonly": args.appendonly,"appenddirname": args.appenddirname,"appendfilename": args.appendfilename,"appendfsync": args.appendfsync}
 
     server_port=args.port
 
