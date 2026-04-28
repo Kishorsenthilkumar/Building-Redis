@@ -980,6 +980,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
                 writer.write(b"+OK\r\n")
                 in_transaction=False
                 command_queue=[]
+                watched_keys.clear()
 
               await writer.drain()
 
@@ -989,7 +990,7 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
 
 
         if command==b"watch":
-            
+
             for i in range(4,len(parts)-1,2):
                 key=parts[i]
             
