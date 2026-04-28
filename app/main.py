@@ -1446,7 +1446,10 @@ async def main():
 
     args=parser.parse_args()
 
-    server_config={"dir":args.dir,"dbfilename":args.dbfilename}
+    if args.dir is None:
+        args.dir=os.getcwd()
+
+    server_config={"dir":args.dir,"dbfilename":args.dbfilename,"appendonly": "no","appenddirname": "appendonlydir","appendfilename": "appendonly.aof","appendfsync": "everysec"}
 
     server_port=args.port
 
