@@ -125,8 +125,6 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
 
       
       command=parts[2].lower()
-      
-
 
       if command==b"set":
                 key=parts[4]
@@ -143,10 +141,20 @@ async def process_command(parts,writer,database,role,replicas,master_state,my_re
                     ms_to_live=int(parts[10])
                     expiry_time=time.time()+(ms_to_live/1000)
                 database[key]={"value":value,"expiry_time":expiry_time}
+
+                propagate_command=b"\r\n".join(parts)
+
+                if server_config["appendonly"]=="yes":
+                    path=get_active_aof_path(server_config)
+                    with open(path,"ab") as f:
+                        f.write(propagate_command)
+                        f.flush()
+                        os.fsync(f.fileno())
+
+
                 writer.write(b"+OK\r\n")
                 await writer.drain()
 
-                propagate_command=b"\r\n".join(parts)
                 
                 for my_replica_profile in replicas:
                     rep_writer = my_replica_profile["writer"]
@@ -1415,23 +1423,28 @@ async def handle_client(reader,writer,role,replicas,master_state,server_config,g
                     
                 else:
                     writer.write(b"+string\r\n")
-            await writer.drain()
-
+            await writer.drain() 
         
-
-
-
-
-
-
-       
-        
-                  
     
-    await writer.drain()
-        
-          
+    await writer.drain()         
     writer.close()
+
+#helper function
+def get_active_aof_path(server_config):
+
+    file_path=os.path.join(server_config["dir"],server_config["appenddirname"])
+    file_path=os.path.join(file_path,server_config["appendfilename"])+".manifest"
+
+    with open(file_path,"r") as f:
+        manifest_text = f.read().strip()
+        parts = manifest_text.split(" ")
+        target_aof_filename = parts[1]
+
+        full_aof_path = os.path.join(file_path, target_aof_filename)
+        return full_aof_path
+
+
+
 
 async def main():
 
@@ -1462,7 +1475,8 @@ async def main():
 
         file_path=os.path.join(path,server_config["appendfilename"])
         file_path=file_path+".1.incr.aof"
-
+        
+        #log tracker to make sure server starts from where it left
         manifest_path=os.path.join(path,server_config["appendfilename"])
         manifest_path=manifest_path+".manifest"
 
